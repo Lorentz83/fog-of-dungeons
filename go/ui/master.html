@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Fog of Dungeons Beta</title>
+        <link rel="icon" href="favicon.png" />
+        
+        <script type="module" src="js/api.mjs"></script>
+        <script type="module" src="js/painter.mjs"></script>
+        <script type="module" src="js/master.mjs"></script>
+        <link href="shared.css" rel="stylesheet" />
+        <link href="master.css" rel="stylesheet" />
+
+        <meta name="viewport" content="minimum-scale=0.1, user-scalable=yes, width=device-width" />
+    </head>
+    <body>
+      <div id="landing_page" class="page">
+        <header>
+          <h1>Fog of Dungeons</h1>
+        </header>
+        <div class="map_organizer">
+          <p>
+            Fog of Doungeons is the implementation of a <a href="https://en.wikipedia.org/wiki/Fog_of_war">fog of war</a>
+            for tabletop role-playing game like Dungeons &amp; Dragons.
+            <br/>
+            The game master can share a map which is initially covered by a thick layer
+            of fog and, while the game unroll, slowly clear the explored portions of the map.
+          </p>
+          <p>
+            Maps are stored on your device.<br/>
+            Create a new map, open it and use the "player link" button to share
+            it with the other players.
+          </p>
+          <button id="new_map_btn">New map</button>
+          <ul id="map_list">
+          </ul>
+        </div>
+        <footer>Footer here</footer>
+      </div>
+      <dialog id="new_map_dialog">
+        <form method="dialog">
+          <label>
+            Map name: <input type="text" name="map_name" minlength="3" required=""/>
+          </label>
+          <label>
+            Fog color: <input name="fog_color" value="#aaa" type="color" required=""/>
+          </label>
+          <label>
+            Load map: <input name="map_file" accept="image/*" type="file" required=""/>
+          </label>
+          <button value="cancel" autofocus formnovalidate>Cancel</button> <button value="submit">OK</button>
+        </form>
+      </dialog>
+      <div id="edit_page" class="page">
+        <header>
+          <input type="checkbox" checked="true" autocomplete="off" id="show_controls">
+          <h1>Fog of Dungeons</h1>
+          <div id="disconnected" title="Check your internet connection">Disconnected</div>
+        </header>
+        <div class="main">
+          <div id="edit_controls">
+              <a href="#">Back</a>
+              <label>
+                  Fog opacity: <input id="fog_opacity" min="0" max="100" value="80" type="range"/>
+              </label>
+              <label>
+                  Defog size: <input id="defog_size" min="5" max="100" value="30" type="range"/>
+              </label>
+              <label>
+                  <input id="keep_awake" type="checkbox" />Keep screen awake
+              </label>
+              <button id="undo">Undo</button>
+              <button id="add_marker">Add marker</button>
+              <span id="status"></span>
+              <a href="#" target="_blank" id="player_link">Player link</a>
+          </div>
+          <div id="map_container">
+          </div>
+        </div>
+        <footer>Footer here</footer>
+      </div>
+      <dialog id="new_marker_dialog">
+        <form method="dialog">
+          <p>Select the new marker, it will appear in the center of the map.<br/>To remove it, simply drag it outside of the map.</p>
+          <div><img src="markers.png" data-width="34" data-height="34" alt="marker icons"/></div>
+          <div><small>Icons from <a href="https://www.deviantart.com/7soul1/art/420-Pixel-Art-Icons-for-RPG-129892453">7soul1</a></small></div>
+          <button value="cancel" autofocus>Cancel</button>
+        </form>
+      </dialog>
+    </body>
+</html>

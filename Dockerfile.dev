@@ -1,0 +1,50 @@
+FROM golang:1.23.2-alpine3.20
+
+RUN apk update && apk add npm && rm -rf /var/cache/apk/*
+RUN npm install -g typescript
+RUN go install github.com/air-verse/air@latest
+
+ENV UID=1001
+ENV GID=1001
+
+COPY --chmod=755 <<"EOF" /bin/entrypoint.sh
+#!/bin/sh
+
+addgroup -g "$GID" srv
+adduser -u "$UID" -G srv -h /home/srv -s /bin/sh -D srv
+
+cd /home/srv
+if [ -n "$*" ]; then
+    echo "runniing as root, use `su srv` to change to the build user"
+    exec /bin/sh -c "$@"
+else
+    echo "running as $UID:$GID"
+    exec su srv -c ./build.sh
+fi
+
+EOF
+
+COPY --chmod=755 <<"EOF" /home/srv/build.sh
+#!/bin/sh
+
+watchTS() {
+    cd ~/src/ts/
+    tsc --watch 
+}
+
+watchGO() {
+    cd ~/src/go/
+    air --build.cmd "GOPATH=/tmp go build -o /tmp/build" \
+        --build.bin "/tmp/build --dev --listen=:8080" \
+        --tmp_dir "../../temp" \
+        --build.exclude_dir "ui"
+}
+
+watchTS &
+# We need to give time to TS to generate output, otherwise go embed complains.
+sleep 3s 
+watchGO
+
+EOF
+
+ENTRYPOINT [ "/bin/entrypoint.sh" ]

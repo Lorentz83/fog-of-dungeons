@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Fog of Dungeons Beta</title>
+        <link rel="icon" href="favicon.png" />
+        <script type="module" src="js/api.mjs"></script>
+        <script type="module" src="js/painter.mjs"></script> <!-- TODO this is used for a single class -->
+        <script type="module" src="js/player.mjs"></script>
+        <link href="shared.css" rel="stylesheet" />
+        <link href="player.css" rel="stylesheet" />
+
+        <meta name="viewport" content="minimum-scale=0.1, user-scalable=yes, height=device-height" />
+    </head>
+    <body class="page">
+      <header><h1>Fog of Dungeons</h1></header>
+      <div>
+        <div id="controls">
+          <span id="status"></span>
+          <label>
+            <input id="keep_awake" type="checkbox" />Keep screen awake
+          </label>
+          <button id="fullscreen_btn">Fullscreen</button>
+        </div>
+        <div id="fullscreen_area">
+          <div id="zoomable">
+            <div id="map_container">
+              Ask your master for a map URL.
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer>Footer here</footer>
+  </body>
+</html>
