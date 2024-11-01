@@ -53,6 +53,7 @@ Not in any specific order:
 - Wire extra command line flags in Docker image.
 - Add tests.
 - Document the protocol between client and server.
+- Publish the docker image on some public repository.
 - Improve UX.
   - When the player enters in fullscreen, the map should rotate to match
     the display orientation.
