@@ -135,6 +135,9 @@ func (a *API) master(rsp http.ResponseWriter, req *http.Request) {
 	// event loop
 	for {
 		// TODO add timeout
+		// TODO pusher should somehow returns a context which expires
+		// when the room is deleted. This way we can drop connection after
+		// the timeout.
 		_, data, err := c.Read(ctx) // todo check type
 		if err != nil {
 			log.Printf("cannot read master %q json: %v", p.ID, err)

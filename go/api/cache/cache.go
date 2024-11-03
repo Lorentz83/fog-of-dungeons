@@ -83,6 +83,8 @@ func (p *Puller) Pull(ctx context.Context) (*Message, error) {
 	select {
 	case msg := <-p.ch:
 		return msg, nil
+	case <-p.closedCh:
+		return nil, errors.New("room deleted")
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
