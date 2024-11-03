@@ -45,12 +45,18 @@ class ImageSwitcher {
     }
 }
 
-// returns the function to close the connection to the server.
-function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement): () => void {
+class Connection {
+    close = () => {}
+    reconnect = () => {}
+}
+
+function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement): Connection {
+    const ret = new Connection();
+
     if ( !roomID ) {
         container.innerText = 'Ask your master for a map URL.';
         status.innerText = 'disconnected';
-        return () => {};
+        return ret;
     }
 
     status.innerText = 'connecting...';
@@ -74,7 +80,9 @@ function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement)
         container.innerText = 'Error: check your internet connection and check your master is online';
     });
     
-    return () => { api.close(); };
+    ret.close = () => { api.close() };
+    ret.reconnect = () => {api.connect() };
+    return ret;
 }
 
 function adjustZoom() {
@@ -113,13 +121,21 @@ function playerInit() {
         const roomID = getRoomID();
         const container = document.getElementById('map_container') as HTMLDivElement;
         const status = document.getElementById('status') as HTMLElement;
-        let closer = loadMap(roomID, container, status);
+        let connection = loadMap(roomID, container, status);
         
         addEventListener('hashchange', () => {
-            closer();
+            connection.close();
             const id = getRoomID();
-            closer = loadMap(id, container, status);
+            connection = loadMap(id, container, status);
         } );
+
+
+        document.addEventListener('visibilitychange', () => {
+            if ( document.visibilityState == 'visible' ) {
+                connection.reconnect();
+            }
+        });
+
     } catch(ex) {
         let msg = 'unknown error';
         if ( ex instanceof Error ) {
