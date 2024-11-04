@@ -41,6 +41,23 @@ header>* {
     margin: 0;
 }
 
+.github {
+    width: fit-content;
+    box-sizing: unset;
+    display: block;
+    padding: 5px 10px;
+    float: right;
+    transform: rotate(-3deg);
+
+    font-family: sans-serif;
+    text-decoration: none;
+
+    text-shadow: 1px 1px 1px black;
+    color: #FAFAF8;
+    border: 1px dashed #FAFAF8;
+    background-color: #901314;
+    outline: 2px solid #901314;
+}
 
 .marker {
     opacity: 1;
