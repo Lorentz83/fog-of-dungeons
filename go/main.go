@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"flag"
 	"io/fs"
 	"log"
@@ -26,6 +27,8 @@ var (
 	expiration  = flag.Duration("cache_expiration", 30*time.Minute, "after how much time of inactivity a game room is deleted")
 	httpCache   = flag.Duration("http_cache", 30*time.Minute, "the HTTP max age for static files. Unused if --dev is set")
 	playerQueue = flag.Int("player_queue", 5, "how many messages are stored in a queue before we consider a player unresponsive")
+
+	webRTCConfig = flag.String("webrtc_config", `{"iceServers": [{"urls": "stun:stun.l.google.com:19302"}]}`, "ICE servers to use to negotiate webRTC connection, if disabled peers may connect only on the same network")
 )
 
 func main() {
@@ -34,6 +37,16 @@ func main() {
 	ah, err := api.NewAPI("/api/", *expiration, *playerQueue)
 	if err != nil {
 		log.Fatalf("cannot create API: %v", err)
+	}
+
+	var config api.WebRTCConfig
+	if err := json.Unmarshal([]byte(*webRTCConfig), &config); err != nil {
+		log.Fatalf("invalid --webrtc_config flag: %v", err)
+	}
+	log.Printf("using webRTC config; %v", config)
+	ahv2, err := api.NewSignaler("/apiv2/", *expiration, config)
+	if err != nil {
+		log.Fatalf("cannot create APIv2: %v", err)
 	}
 
 	var staticHandler http.Handler
@@ -51,6 +64,7 @@ func main() {
 	m := http.NewServeMux()
 	m.Handle("/", &server.IndexFile{H: staticHandler, Index: "/master.html"})
 	m.Handle("/api/", ah)
+	m.Handle("/apiv2/", ahv2)
 
 	s := &server.Logger{H: m}
 

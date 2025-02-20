@@ -275,8 +275,8 @@ func (d *Dispatcher) NewPusher(id, auth string) (*Pusher, error) {
 		}
 		// Last case we have ID but not in memory, just recreate the entry with the given ID and auth.
 	} else {
-		id = genID()
-		auth = genAuth()
+		id = GenID()
+		auth = GenAuth()
 	}
 
 	if _, ok := d.entries[id]; ok {
@@ -321,7 +321,7 @@ func (d *Dispatcher) NewPuller(id string) (*Puller, []*Message, error) {
 
 var idAlphabet = ([]rune)("23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ")
 
-func genID() string {
+func GenID() string {
 	generatedIDs.Add(1)
 
 	var mod = int64(len(idAlphabet))
@@ -334,7 +334,7 @@ func genID() string {
 	return string(ret)
 }
 
-func genAuth() string {
+func GenAuth() string {
 	b := make([]byte, 25)
 	_, err := crand.Read(b)
 	if err != nil {
