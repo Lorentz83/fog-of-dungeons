@@ -1,4 +1,6 @@
-import { PlayerSocket, keepAwakeCheckbox } from "./api.mjs"
+import { PlayerSocket } from "./api.mjs"
+import { PlayerPeerConnection } from "./apiv2.mjs"
+import { keepAwakeCheckbox } from "./common.mjs" 
 import { MarkerPlacer } from "./painter.mjs"
 
 class ImageSwitcher {
@@ -50,6 +52,14 @@ class Connection {
     reconnect = () => {}
 }
 
+interface API {
+    close(): void;
+    connect(): Promise<any>;
+    onConnectionChange: (room: any) => void;
+    onMarkers: (markers: any) => void;
+    onMap: (mapURL: any) => void;
+}
+
 function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement): Connection {
     const ret = new Connection();
 
@@ -64,7 +74,13 @@ function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement)
     const img = new ImageSwitcher(container, './spinner.gif');
     const markerPlacer = new MarkerPlacer(container);
     
-    const api = new PlayerSocket(roomID);
+    let api: API;
+    if ( window.location.search == '?beta' ) {
+        console.log('USING BETA API');
+        api = new PlayerPeerConnection(roomID);
+    } else {
+        api = new PlayerSocket(roomID);
+    }
     api.onMap = (mapURL) => { img.src = mapURL };
     api.onMarkers = (markers) => { markerPlacer.load(markers, false) };
     api.onConnectionChange = (room) => {

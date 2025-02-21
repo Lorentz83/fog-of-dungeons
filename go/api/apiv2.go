@@ -126,7 +126,11 @@ func (s *Signaler) master(ctx context.Context, c *websocket.Conn, roomID string)
 		return
 	}
 
-	welcome := WelcomeMaster{Config: s.config}
+	welcome := WelcomeMaster{
+		Config: s.config,
+		Secret: m.Secret,
+		Room:   roomID,
+	}
 
 	// Validation
 	if l := len(roomID); l < 4 {

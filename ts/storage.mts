@@ -1,4 +1,4 @@
-import { PositionedMarker, newID } from "./api.mjs"
+import { PositionedMarker, newID } from "./common.mjs"
 
 export type LayerType = 'base' | 'fog' | 'markers';
 

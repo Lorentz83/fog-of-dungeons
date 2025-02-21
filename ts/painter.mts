@@ -1,4 +1,4 @@
-import { PositionedMarker, MarkerIcon } from "./api.mjs"
+import { PositionedMarker, MarkerIcon } from "./common.mjs"
 
 
 // LiveMarker is a wrapper around a PositionedMarker which enables HTML interactions.

@@ -1,4 +1,6 @@
-import { PositionedMarker, MasterSocket, MarkerIcon, keepAwakeCheckbox } from "./api.mjs"
+import { MasterSocket } from "./api.mjs"
+import { MasterPeerConnection } from "./apiv2.mjs"
+import { PositionedMarker, MarkerIcon, keepAwakeCheckbox } from "./common.mjs"
 import { MapStorage, StoredMap } from "./storage.mjs"
 import { Painter } from "./painter.mjs"
 
@@ -154,6 +156,14 @@ class Pagination {
     }
 }
 
+
+interface API {
+    sendMarkers(markers: PositionedMarker[]): any
+    sendMap(arg0: string): unknown
+    close(): void;
+    onConnectionChange: (room: any) => void;
+}
+
 async function initMaster() {
     const keepAwake = keepAwakeCheckbox(document.getElementById('keep_awake') as HTMLInputElement);
     
@@ -182,7 +192,7 @@ async function initMaster() {
         }
     });
 
-    let api: MasterSocket | null;
+    let api: API | null;
     const pagination = new Pagination();
     pagination.onLanding = () => {
         keepAwake.disable();
@@ -195,7 +205,12 @@ async function initMaster() {
     };
     pagination.onEdit = async (mapID: string) => {
         try {
-            api = new MasterSocket(mapID);
+            if ( window.location.search == '?beta' ) {
+                console.log('USING BETA API');
+                api = new MasterPeerConnection(mapID);
+            } else {
+                api = new MasterSocket(mapID);
+            }
             api.onConnectionChange = (room) => {
                 if ( room === false ) {
                     disconnectedChip.style.visibility = 'visible';
@@ -204,7 +219,7 @@ async function initMaster() {
                 } else {
                     disconnectedChip.style.visibility = 'hidden';
                     status.innerText = `room: ${room}`;
-                    playerLink.href = `./player.html#id=${room}`
+                    playerLink.href = `./player.html${window.location.search}#id=${room}`
                 }
             };
             const onDefog = async() => {
