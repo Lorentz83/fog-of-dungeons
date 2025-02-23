@@ -286,12 +286,24 @@ class IDSignaler implements ISignaler{
   }
 }
 
-class PlayerConn extends ConnectionPair {
+class PlayerConn {
   signaler: IDSignaler;
+  peer?: RTCPeerConnection;
+  data?: RTCDataChannel;
   
-  constructor(p: ConnectionPair, s: IDSignaler) {
-    super(p.peer, p.data);
+  constructor(s: IDSignaler) {
     this.signaler = s;
+  }
+
+  setWebRTC(p: ConnectionPair) {
+    this.peer = p.peer;
+    this.data = p.data;
+  }
+  
+  close() {
+    this.signaler.close();
+    this.peer?.close();
+    this.signaler?.close();
   }
 }
 
@@ -336,9 +348,10 @@ export class MasterPeerConnection {
         this.onConnectionChange(this._roomID);
       } else if (msg.new_player) {
         const s = new IDSignaler(this._controlConn, msg.new_player);
+        const c = new PlayerConn(s);
+        this._players.set(msg.new_player, c); // newWebRTCDataConnection needs to receive messages.
         const p = newWebRTCDataConnection(this._rtcConfig, s, /* unpolite */false);
-        const c = new PlayerConn(p, s);
-        this._players.set(msg.new_player, c);
+        c.setWebRTC(p);
       } else if (msg.player_id) {
         const s = this._players.get(msg.player_id);
         if (! s ) {
@@ -359,9 +372,7 @@ export class MasterPeerConnection {
   async close() {
     this._controlConn.close();
     this._players.forEach((conn) => {
-      conn.data.close();
-      conn.peer.close();
-      conn.signaler.close();
+      conn.close();
     })
     this._players.clear();
   }
@@ -370,7 +381,7 @@ export class MasterPeerConnection {
     const jData = JSON.stringify({ content: 'merged', data: data });
     this._players.forEach((conn) => {
       try {
-        conn.data.send(jData);
+        conn.data?.send(jData);
       } catch (e) {
         console.log('error sending map to peer', e);
       }
@@ -381,7 +392,7 @@ export class MasterPeerConnection {
     const jData = JSON.stringify({ content: 'markers', data: markers });
     this._players.forEach((conn) => {
       try {
-        conn.data.send(jData);
+        conn.data?.send(jData);
       } catch (e) {
         console.log('error sending map to peer', e);
       }
