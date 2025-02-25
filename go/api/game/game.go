@@ -10,19 +10,8 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/lorentz83/fogofdungeons/api/protocol"
 )
-
-// NegotiationMessage is the negotiation message forwarded between master and player.
-type NegotiationMessage struct {
-	// PlayerID is used only in messages to and from the master to identify the right player
-	// in the multiplexed connection.
-	PlayerID string `json:"player_id,omitempty"`
-
-	// Description is required by WebRTC protocol, opaque to the backend.
-	Description any `json:"description,omitempty"`
-	// Candidate is required by WebRTC protocol, opaque to the backend.
-	Candidate any `json:"candidate,omitempty"`
-}
 
 // Place is a collection of Rooms.
 type Place struct {
@@ -215,20 +204,16 @@ type PlayerSeat struct {
 
 // AskJoin sends a join request to the master.
 func (s *PlayerSeat) AskJoin(ctx context.Context) error {
-	please := map[string]string{
-		"new_player": s.id,
-	}
-
-	return s.room.Master().toMaster(ctx, please)
+	return s.room.Master().toMaster(ctx, protocol.NewPlayer{PlayerID: s.id})
 }
 
 // ToMaster sends a json message to the master.
-func (s *PlayerSeat) ToMaster(ctx context.Context, message NegotiationMessage) error {
+func (s *PlayerSeat) ToMaster(ctx context.Context, message protocol.Negotiation) error {
 	message.PlayerID = s.id
 	return s.room.Master().toMaster(ctx, message)
 }
 
-func (s *PlayerSeat) toPlayer(ctx context.Context, message NegotiationMessage) error {
+func (s *PlayerSeat) toPlayer(ctx context.Context, message protocol.Negotiation) error {
 	if s == nil {
 		return fmt.Errorf("unknown player")
 	}
@@ -264,7 +249,7 @@ type MasterSeat struct {
 }
 
 // ToPlayer sends a json message to the master.
-func (s *MasterSeat) ToPlayer(ctx context.Context, playerID string, message NegotiationMessage) error {
+func (s *MasterSeat) ToPlayer(ctx context.Context, playerID string, message protocol.Negotiation) error {
 	message.PlayerID = "" // The player shouldn't care about their ID.
 	return s.room.Player(playerID).toPlayer(ctx, message)
 }

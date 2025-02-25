@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lorentz83/fogofdungeons/api"
+	"github.com/lorentz83/fogofdungeons/api/protocol"
 	"github.com/lorentz83/fogofdungeons/metric"
 	"github.com/lorentz83/fogofdungeons/server"
 )
@@ -39,7 +40,7 @@ func main() {
 		log.Fatalf("cannot create API: %v", err)
 	}
 
-	var config api.WebRTCConfig
+	var config protocol.RTCConfiguration
 	if err := json.Unmarshal([]byte(*webRTCConfig), &config); err != nil {
 		log.Fatalf("invalid --webrtc_config flag: %v", err)
 	}

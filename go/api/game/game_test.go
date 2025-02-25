@@ -10,6 +10,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/lorentz83/fogofdungeons/api/protocol"
 )
 
 func TestNewRoom_basicConnections(t *testing.T) {
@@ -40,7 +41,7 @@ func TestNewRoom_basicConnections(t *testing.T) {
 
 	var playerID string
 	t.Run("ToMaster", func(t *testing.T) {
-		if err := ps.ToMaster(ctx, NegotiationMessage{Description: "hello"}); err != nil {
+		if err := ps.ToMaster(ctx, protocol.Negotiation{Description: "hello"}); err != nil {
 			t.Fatalf("ToMaster() unexpected error: %v", err)
 		}
 
@@ -52,7 +53,7 @@ func TestNewRoom_basicConnections(t *testing.T) {
 	})
 
 	t.Run("ToPlayer", func(t *testing.T) {
-		if err := ms.ToPlayer(ctx, playerID, NegotiationMessage{Candidate: "hello"}); err != nil {
+		if err := ms.ToPlayer(ctx, playerID, protocol.Negotiation{Candidate: "hello"}); err != nil {
 			t.Fatalf("ToPlayer() unexpected error: %v", err)
 		}
 
@@ -70,7 +71,7 @@ func TestNewRoom_basicConnections(t *testing.T) {
 			t.Fatalf("ControlRoom(wrong secret) want error")
 		}
 
-		ps.ToMaster(ctx, NegotiationMessage{})
+		ps.ToMaster(ctx, protocol.Negotiation{})
 		mustReadMessage(t, ctx, masterControl) // The message is delivered to the old master.
 	})
 
@@ -81,7 +82,7 @@ func TestNewRoom_basicConnections(t *testing.T) {
 			t.Fatalf("ControlRoom(right secret) unexpected error: %v", err)
 		}
 
-		ps.ToMaster(ctx, NegotiationMessage{})
+		ps.ToMaster(ctx, protocol.Negotiation{})
 		mustReadMessage(t, ctx, newMasterControl) // The message is delivered to the new master.
 	})
 }
@@ -114,12 +115,12 @@ func TestNewRoom_MultiplePlayers(t *testing.T) {
 		t.Fatalf("PlayInRoom() returned unexpected error: %v", err)
 	}
 
-	if err := ps1.ToMaster(ctx, NegotiationMessage{}); err != nil {
+	if err := ps1.ToMaster(ctx, protocol.Negotiation{}); err != nil {
 		t.Fatalf("ToMaster() unexpected error: %v", err)
 	}
 	player1ID := mustReadMessage(t, ctx, masterControl).PlayerID
 
-	if err := ps2.ToMaster(ctx, NegotiationMessage{}); err != nil {
+	if err := ps2.ToMaster(ctx, protocol.Negotiation{}); err != nil {
 		t.Fatalf("ToMaster() unexpected error: %v", err)
 	}
 	player2ID := mustReadMessage(t, ctx, masterControl).PlayerID
@@ -128,14 +129,14 @@ func TestNewRoom_MultiplePlayers(t *testing.T) {
 		t.Errorf("player IDs should be different, got %v", player1ID)
 	}
 
-	if err := ms.ToPlayer(ctx, player1ID, NegotiationMessage{Candidate: "c1"}); err != nil {
+	if err := ms.ToPlayer(ctx, player1ID, protocol.Negotiation{Candidate: "c1"}); err != nil {
 		t.Fatalf("ToPlayer() unexpected error: %v", err)
 	}
 	if msg := mustReadMessage(t, ctx, playerControl1); msg.Candidate != "c1" {
 		t.Errorf("want message Candidate=C1, got %v", msg)
 	}
 
-	if ms.ToPlayer(ctx, player2ID, NegotiationMessage{Candidate: "c2"}); err != nil {
+	if ms.ToPlayer(ctx, player2ID, protocol.Negotiation{Candidate: "c2"}); err != nil {
 		t.Fatalf("ToPlayer() unexpected error: %v", err)
 	}
 	if msg := mustReadMessage(t, ctx, playerControl2); msg.Candidate != "c2" {
@@ -191,9 +192,9 @@ func TestRoomTimeout(t *testing.T) {
 	}
 }
 
-func mustReadMessage(t *testing.T, ctx context.Context, c *websocket.Conn) NegotiationMessage {
+func mustReadMessage(t *testing.T, ctx context.Context, c *websocket.Conn) protocol.Negotiation {
 	t.Helper()
-	var msg NegotiationMessage
+	var msg protocol.Negotiation
 	if err := wsjson.Read(ctx, c, &msg); err != nil {
 		t.Fatalf("cannot read message: %v", err)
 	}
