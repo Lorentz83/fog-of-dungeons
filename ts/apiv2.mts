@@ -72,17 +72,20 @@ interface ISignaler {
 }
 
 // Signaler is the websocket connection to the server used to negotiate webRTC.
-class Signaler implements ISignaler {
+class Signaler extends EventTarget implements ISignaler {
   private _url: string;
   private _s?: WebSocket;
 
   // Callback on message received.
+  // Can be registered as event.
   onMessage = (msg: AnyServerMessage) => { };
 
   // Callback which is called when the connection drops.
+  // Can be registered as event.
   onDisconnection = () => { };
 
   constructor(role: 'master' | 'player') {
+    super();
     this._url = `./apiv2/${role}`;
   }
 
@@ -99,11 +102,13 @@ class Signaler implements ISignaler {
       });
       socket.addEventListener('message', (ev) => {
         const msg = JSON.parse(ev.data);
+        this.dispatchEvent(new CustomEvent('onMessage', {detail: msg}));
         this.onMessage(msg);
       });
       socket.addEventListener('close', (ev) => {
-        this.onDisconnection();
+        this.dispatchEvent(new Event('onMessage'));
         this._s = undefined;
+        this.onDisconnection();
       });
     });
     return _sPromise;
@@ -319,42 +324,59 @@ export class PlayerPeerConnection {
 }
 
 // All the messages sent are enriched with the player_id field.
-// Received messages must be manually filtered at a higher level.
+// Received messages are filtered by player_id;
 class IDSignaler implements ISignaler{
   private _signaler: Signaler;
   private _playerID: string;
-
+  
   onMessage = (msg: any) => {};
 
-  constructor(sender:Signaler, playerID:string){
+  constructor(sender: Signaler, playerID: string){
     this._signaler = sender;
     this._playerID = playerID;
+
+    this._signaler.addEventListener('onMessage', this._filterMessages);
   }
 
-  send(data:any) {
+  send(data: any) {
     data.player_id = this._playerID;
     this._signaler.send(data);
   }
-}
 
-class PlayerConn {
-  signaler: IDSignaler;
-  private conn?: PeerConnection
-  
-  constructor(s: IDSignaler) {
-    this.signaler = s;
+  close() {
+    this._signaler.removeEventListener('onMessage', this._filterMessages);
   }
 
-  setWebRTC(p: PeerConnection) {
-    this.conn = p;
+  private _filterMessages = (ev: any) => {
+    if ( ev.detail.player_id === this._playerID ) {
+      this.onMessage(ev.detail);
+    }
+  }
+}
+
+class ToPlayerConnection {
+  private _signaler: IDSignaler;
+  private _conn: PeerConnection
+  
+  onPeerConnectionChange = (connected: boolean) => {};
+
+  constructor(s: IDSignaler, cfg: RTCConfiguration) {
+    this._signaler = s;
+    this._conn = new PeerConnection();
+    this._conn.connect(cfg, s, /* unpolite */false);
+
+    this._conn.onConnectionChange = (connected: boolean) => {
+      this.onPeerConnectionChange(connected);
+    };
   }
   
   close() {
-    this.conn?.close();
+    this._signaler.close();
+    this._conn.close();
   }
 
   send(msg: any) {
-    this.conn!.send(msg);
+    this._conn.send(msg);
   }
 }
 
@@ -362,7 +384,7 @@ export class MasterPeerConnection {
   private _roomID = '';
   private _auth = '';
   private _storageKey = '';
-  private _players = new Map<string, PlayerConn>()
+  private _players = new Map<string, ToPlayerConnection>()
   private _controlConn: Signaler;
   private _rtcConfig: RTCConfiguration = {};
 
@@ -403,21 +425,21 @@ export class MasterPeerConnection {
         sessionStorage.setItem(this._storageKey, JSON.stringify({id: welcome.room, auth: welcome.secret}));
         this.onConnectionChange(this._roomID);
       } else if (newPlayer) {
-        console.log('new player connecting', newPlayer.player_id)
-        const s = new IDSignaler(this._controlConn, newPlayer.player_id);
-        const c = new PlayerConn(s);
-        this._players.set(newPlayer.player_id, c); // newWebRTCDataConnection needs to receive messages.
-        const p = new PeerConnection()
-        p.connect(this._rtcConfig, s, /* unpolite */false);
-        c.setWebRTC(p);
+        const id = newPlayer.player_id;
+        console.log(`player ${id} connecting`);
+        const s = new IDSignaler(this._controlConn, id);
+        const c = new ToPlayerConnection(s, this._rtcConfig);
+        c.onPeerConnectionChange = (connected: boolean) => {
+          if ( connected ) {
+            console.log(`player ${id} connected`);
+            this._players.set(id, c);
+          } else {
+            console.log(`player ${id} disconnected`);
+            this._players.delete(id);
+          }
+        };
       } else if (negotiation) {
-        const playerID = negotiation.player_id!;
-        const s = this._players.get(playerID);
-        if (! s ) {
-          console.log('unknown player', playerID);
-        } else {
-          s.signaler.onMessage(negotiation);
-        }
+        // Nothing to do, IDSignaler handles this already.
       } else {
         console.log('unknown message', msg); 
       }
