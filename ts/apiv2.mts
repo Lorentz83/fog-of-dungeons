@@ -65,12 +65,7 @@ class JoinRoom {
 
 type AnyServerMessage = NewPlayer | Negotiation | WelcomeMaster | WelcomePlayer | Error;
 
-function makeURL(role: 'master' | 'player') {
-  return `./apiv2/${role}`;
-}
-
-
-// ISignaler is the interface to send and receive messages.
+// ISignaler is the interface to send and receive control messages to negotiate webRTC.
 interface ISignaler {
   send(data: Negotiation): void;
   onMessage: (msg: AnyServerMessage) => void;
@@ -85,18 +80,19 @@ class Signaler implements ISignaler {
   onMessage = (msg: AnyServerMessage) => { };
 
   // Callback which is called when the connection drops.
-  onDisconnection = () => { }; // TODO for the master is important to know when connection is established too.
+  onDisconnection = () => { };
 
-  constructor(url: string) {
-    this._url = url;
+  constructor(role: 'master' | 'player') {
+    this._url = `./apiv2/${role}`;
   }
 
-  connect(): Promise<WebSocket> {
+  // connects to the server, the promise is resolved when the connection is established.
+  connect(): Promise<void> {
     const socket = new WebSocket(this._url);
-    const _sPromise = new Promise<WebSocket>((resolve, reject) => {
+    const _sPromise = new Promise<void>((resolve, reject) => {
       socket.addEventListener('open', (ev) => {
-        resolve(socket);
         this._s = socket;
+        resolve();
       });
       socket.addEventListener('error', (ev) => {
         reject(new Error('cannot connect to server'));
@@ -121,107 +117,134 @@ class Signaler implements ISignaler {
   }
 
   // data will be sent as json.
+  // It is required to call connect() before calling send.
   async send(data: Negotiation | ControlRoom | JoinRoom) {
-    if (!this._s) {
-      await this.connect();
+    if ( !this._s ) {
+      throw(new Error('websocket not connected'));
     }
-    const jdata = JSON.stringify(data);
-    this._s!.send(jdata);
+    this._s!.send(JSON.stringify(data));
   }
 }
 
-class ConnectionPair {
-  peer: RTCPeerConnection;
-  data: RTCDataChannel;
-  constructor(peer: RTCPeerConnection, data: RTCDataChannel) {
-    this.peer = peer;
-    this.data = data;
-  }
-}
 
-// Connect to webRTC following the perfect negotiation pattern.
-// https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation
-function newWebRTCDataConnection(config: RTCConfiguration, signaler: ISignaler, polite: boolean): ConnectionPair {
-  console.log('webRTC config', config, 'politeness', polite);
+// PeerConnection is a webRTC data connection.
+class PeerConnection {
+  _peer?: RTCPeerConnection;
+  _data?: RTCDataChannel;
 
-  const pc = new RTCPeerConnection(config);
-  const dc = pc.createDataChannel('data', {
-    negotiated: true, // Both sides call createDataChannel with agreed ID.
-    id: 0,
-  });
+  onConnectionChange = (connected: boolean) => {};
+  onMessage = (msg: any) => {};
 
-  pc.onicecandidate = ({ candidate }) => signaler.send({ candidate: candidate });
+  // Connect to webRTC following the perfect negotiation pattern.
+  // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation
+  // 
+  // Config is the initial configuration.
+  // signaler is used only to exchange candidates, no other message is handled, server errors are just logged.
+  // one peer must be polite, the other must be not polite.
+  connect(config: RTCConfiguration, signaler: ISignaler, polite: boolean) {
+    console.log('webRTC config', config, 'politeness', polite);
 
-  let makingOffer = false;
-  pc.onnegotiationneeded = async () => {
-    // This is called as soon as we end.
-    try {
-      makingOffer = true;
-      await pc.setLocalDescription();
-      signaler.send({ description: pc.localDescription });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      makingOffer = false;
-    }
-  };
+    const pc = new RTCPeerConnection(config);
+    const dc = pc.createDataChannel('data', {
+      negotiated: true, // Both sides call createDataChannel with agreed ID.
+      id: 0,
+    });
+    dc.onmessage = (ev) => { this.onMessage(ev.data) };
 
-  let ignoreOffer = false;
-  signaler.onMessage = async (msg) => {
-    const error = AsError(msg);
-    if (error) {
-      console.log('signal error', error);
-      return;
-    }
-    const n = AsNegotiation(msg);
-    if ( n == null) {
-      console.log('unsupported message during negotiation', msg);
-      return;
-    }
-    try {
-      if (n.description) {
-        const offerCollision =
-          n.description.type === 'offer' &&
-          (makingOffer || pc.signalingState !== 'stable');
+    pc.onicecandidate = ({ candidate }) => signaler.send({ candidate: candidate });
 
-        ignoreOffer = !polite && offerCollision;
-        if (ignoreOffer) {
-          return;
-        }
-        console.log('state', pc.iceConnectionState, 'remote desc', n.description);
-        await pc.setRemoteDescription(n.description);
-        if (n.description.type === 'offer') {
-          await pc.setLocalDescription();
-          signaler.send({ description: pc.localDescription });
-        }
-      } else if (n.candidate) {
-        try {
-          await pc.addIceCandidate(n.candidate);
-        } catch (err) {
-          if (!ignoreOffer) {
-            throw err;
+    let makingOffer = false;
+    pc.onnegotiationneeded = async () => {
+      // This is called as soon as we end.
+      try {
+        makingOffer = true;
+        await pc.setLocalDescription();
+        signaler.send({ description: pc.localDescription });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        makingOffer = false;
+      }
+    };
+
+    let ignoreOffer = false;
+    signaler.onMessage = async (msg) => {
+      const error = AsError(msg);
+      if (error) {
+        console.log('signal error', error);
+        return;
+      }
+      const n = AsNegotiation(msg);
+      if ( n == null) {
+        console.log('unsupported message during negotiation', msg);
+        return;
+      }
+      try {
+        if (n.description) {
+          const offerCollision = n.description.type === 'offer' && (makingOffer || pc.signalingState !== 'stable');
+
+          ignoreOffer = !polite && offerCollision;
+          if (ignoreOffer) {
+            return;
+          }
+          await pc.setRemoteDescription(n.description);
+          if (n.description.type === 'offer') {
+            await pc.setLocalDescription();
+            signaler.send({ description: pc.localDescription });
+          }
+        } else if (n.candidate) {
+          try {
+            await pc.addIceCandidate(n.candidate);
+          } catch (err) {
+            if (!ignoreOffer) {
+              throw err;
+            }
           }
         }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-  pc.oniceconnectionstatechange = () => {
-    console.log('oniceconnectionstatechange', pc.iceConnectionState);
-    // TODO handle connection drops.
-    // if (pc.iceConnectionState === 'failed') {
-    //   pc.restartIce();
-    // }
-  };
+    };
 
-  return new ConnectionPair(pc, dc);
+    pc.oniceconnectionstatechange = () => {
+      console.log('oniceconnectionstatechange', pc.iceConnectionState);
+      // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/iceConnectionState#value
+      // new -> checking -> connected -> completed
+      // disconnected can be a transient error.
+      // pc.restartIce() can be called on failed connection to retry.
+      switch( pc.iceConnectionState ) {
+        case 'connected':
+        case 'completed': // Everything is connected!
+          this._peer = pc;
+          this._data = dc;
+          this.onConnectionChange(true);
+          break;
+        case 'failed':
+          this.onConnectionChange(false);
+          break;
+        case 'closed':
+          this._peer = undefined;
+          this._data = undefined;
+          this.onConnectionChange(false);
+          break;
+      }
+    };
+  }
+
+  close() {
+    this._data?.close();
+    this._peer?.close();
+  }
+
+  send(msg: any) {
+    this._data!.send(msg);
+  }
 }
 
 export class PlayerPeerConnection {
   private _roomID;
   private _controlConn: Signaler;
-  private _master?: ConnectionPair;
+  private _master?: PeerConnection;
 
   onMap = (data: string) => { };
   onMarkers = (data: PositionedMarker[]) => { };
@@ -229,27 +252,29 @@ export class PlayerPeerConnection {
 
   constructor(roomID: string) {
     this._roomID = roomID;
-    this._controlConn = new Signaler(makeURL('player'));
+    this._controlConn = new Signaler('player');
   }
 
   async connect() {
-    this._controlConn.onDisconnection = () => {
-      console.log('control connection lost')
-    };
+    const master = new PeerConnection();
 
     const configP = new Promise<RTCConfiguration>((accept, reject) => {
+      this._controlConn.onDisconnection = () => {
+        // TODO should we care of control disconnection as long as p2p is still connected?
+        console.log('control connection lost');
+        reject('control connection lost');
+      };
       // The first message is the configuration
       this._controlConn.onMessage = (msg: any) => {
         const err = AsError(msg);
+        const w = AsWelcomePlayer(msg);
         if ( err ) {
           reject(msg.error);
-          return;
-        }
-        const w = AsWelcomePlayer(msg);
-        if ( w ) {
+        } else if ( w ) {
           accept(w.config);
+        } else {
+          reject(`unknown message: %{msg}`);
         }
-        reject(`unknown message: %{msg}`);
       };
     })
 
@@ -259,16 +284,20 @@ export class PlayerPeerConnection {
 
     // newWebRTCDataConnection takes ownership of the control connection,
     // overwriting the onMessage callback.
-    this._master = newWebRTCDataConnection(config, this._controlConn, true);
+    master.connect(config, this._controlConn, true);
 
-    this._master.data.onclose = () => {
-      this.onConnectionChange(false);
+    master.onConnectionChange = (connected) => {
+      if ( connected ) {
+        this._master = master;
+        this.onConnectionChange(this._roomID);
+      } else {
+        this.onConnectionChange(false);
+      }
     };
-    this._master.data.onopen = () => {
-      this.onConnectionChange(this._roomID);
-    }
-    this._master.data.onmessage = (ev) => {
-      const data = JSON.parse(ev.data);
+    
+    master.onMessage = (msg) => {
+      console.log('received p2p message', msg);
+      const data = JSON.parse(msg);
       switch (data.content) {
         case 'merged':
           this.onMap(data.data);
@@ -284,14 +313,13 @@ export class PlayerPeerConnection {
 
   async close() {
     this._controlConn.close();
-    this._master?.data.close();
-    this._master?.peer.close();
+    this._master?.close();
     console.log('connection closed');
   }
 }
 
 // All the messages sent are enriched with the player_id field.
-// Received messages must be manually filtered at a top level
+// Received messages must be manually filtered at a higher level.
 class IDSignaler implements ISignaler{
   private _signaler: Signaler;
   private _playerID: string;
@@ -307,30 +335,26 @@ class IDSignaler implements ISignaler{
     data.player_id = this._playerID;
     this._signaler.send(data);
   }
-
-  close() {
-    this._signaler.close();
-  }
 }
 
 class PlayerConn {
   signaler: IDSignaler;
-  peer?: RTCPeerConnection;
-  data?: RTCDataChannel;
+  private conn?: PeerConnection
   
   constructor(s: IDSignaler) {
     this.signaler = s;
   }
 
-  setWebRTC(p: ConnectionPair) {
-    this.peer = p.peer;
-    this.data = p.data;
+  setWebRTC(p: PeerConnection) {
+    this.conn = p;
   }
   
   close() {
-    this.signaler.close();
-    this.peer?.close();
-    this.signaler?.close();
+    this.conn?.close();
+  }
+
+  send(msg: any) {
+    this.conn!.send(msg);
   }
 }
 
@@ -343,7 +367,7 @@ export class MasterPeerConnection {
   private _rtcConfig: RTCConfiguration = {};
 
   // Callback which is called when the connection is established
-  // with the roomID or with false if the connection is closed.
+  // with the roomID or with false if the control connection is closed.
   onConnectionChange = (room: string | false) => { };
 
   constructor(mapID: string) {
@@ -358,9 +382,10 @@ export class MasterPeerConnection {
       console.log('cannot get socket parameters', mapID, ex);
     }
 
-    this._controlConn = new Signaler(makeURL('master'));
+    this._controlConn = new Signaler('master');
     this._controlConn.onDisconnection = () => {
       console.log('control connection lost');
+      this.onConnectionChange(false);
     };
     this._controlConn.onMessage = (msg) => {
       const error = AsError(msg);
@@ -378,10 +403,12 @@ export class MasterPeerConnection {
         sessionStorage.setItem(this._storageKey, JSON.stringify({id: welcome.room, auth: welcome.secret}));
         this.onConnectionChange(this._roomID);
       } else if (newPlayer) {
+        console.log('new player connecting', newPlayer.player_id)
         const s = new IDSignaler(this._controlConn, newPlayer.player_id);
         const c = new PlayerConn(s);
         this._players.set(newPlayer.player_id, c); // newWebRTCDataConnection needs to receive messages.
-        const p = newWebRTCDataConnection(this._rtcConfig, s, /* unpolite */false);
+        const p = new PeerConnection()
+        p.connect(this._rtcConfig, s, /* unpolite */false);
         c.setWebRTC(p);
       } else if (negotiation) {
         const playerID = negotiation.player_id!;
@@ -411,9 +438,9 @@ export class MasterPeerConnection {
 
   async sendMap(data: string) {
     const jData = JSON.stringify({ content: 'merged', data: data });
-    this._players.forEach((conn) => {
+    this._players.forEach((conn, id) => {
       try {
-        conn.data?.send(jData);
+        conn.send(jData);
       } catch (e) {
         console.log('error sending map to peer', e);
       }
@@ -422,9 +449,9 @@ export class MasterPeerConnection {
 
   async sendMarkers(markers: PositionedMarker[]) {
     const jData = JSON.stringify({ content: 'markers', data: markers });
-    this._players.forEach((conn) => {
+    this._players.forEach((conn, id) => {
       try {
-        conn.data?.send(jData);
+        conn.send(jData);
       } catch (e) {
         console.log('error sending map to peer', e);
       }

@@ -100,7 +100,7 @@ func (s *Signaler) master(ctx context.Context, c *websocket.Conn) {
 	if l := len(welcome.Room); l < 4 {
 		welcome.Room = cache.GenID()
 	}
-	if len(m.Secret) < 5 {
+	if len(m.Secret) == 0 {
 		welcome.Secret = cache.GenAuth()
 	}
 
@@ -128,7 +128,6 @@ func (s *Signaler) master(ctx context.Context, c *websocket.Conn) {
 			log.Printf("cannot read negotiation message: %v", err)
 			return
 		}
-		log.Printf("master read: %+v", m)
 		if err := room.ToPlayer(ctx, m.PlayerID, m); err != nil {
 			jError(ctx, c, err.Error())
 			continue
@@ -171,7 +170,6 @@ func (s *Signaler) player(ctx context.Context, c *websocket.Conn) {
 			log.Printf("cannot read negotiation message: %v", err)
 			return
 		}
-		log.Printf("player read: %+v", m)
 
 		if err := room.ToMaster(ctx, m); err != nil {
 			jError(ctx, c, err.Error())
