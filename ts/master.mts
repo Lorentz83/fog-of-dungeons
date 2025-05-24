@@ -126,7 +126,6 @@ class NewMapDialog {
 }
 
 class Pagination {
-    private _editPrefix = '#id=';
     onLanding = () => {};
     onEdit = (id: string) => {};
 
@@ -137,24 +136,22 @@ class Pagination {
     }
 
     navigateEditMap(id: string) {
-        window.location.hash = this._editPrefix + id;
+        window.location.hash = this.makeEditMapLink(id);
     }
 
     makeEditMapLink(id: string) {
-        return this._editPrefix + id;
+        return '#map=' + id;
     }
 
     forceCheck() {
-        const h = window.location.hash;
-        if ( h.startsWith(this._editPrefix) ) {
-            const id = h.substring(this._editPrefix.length)
-            this.onEdit(id);
+        const h = new URLSearchParams(window.location.hash.substring(1));
+        if (h.has("map")) {
+            const mapId = h.get("map")!;
+            this.onEdit(mapId);
             document.body.classList.add('edit_mode');
-        } else if ( h == '' || h == '#' ) {
+        } else {
             document.body.classList.remove('edit_mode');
             this.onLanding();
-        } else {
-            console.log('unknown hash ', h)
         }
     }
 }
@@ -216,10 +213,16 @@ async function initMaster() {
                     disconnectedChip.style.visibility = 'visible';
                     status.innerText = 'disconnected';
                     playerLink.href = '#';
+
                 } else {
                     disconnectedChip.style.visibility = 'hidden';
                     status.innerText = `room: ${room}`;
                     playerLink.href = `./player.html${window.location.search}#id=${room}`
+
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    hashParams.set('room', room);
+
+                    window.location.hash = '#' + hashParams.toString();
                 }
             };
             const onDefog = async() => {
