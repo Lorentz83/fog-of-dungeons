@@ -381,9 +381,6 @@ class ToPlayerConnection {
 }
 
 export class MasterPeerConnection {
-  private _roomID = '';
-  private _auth = '';
-  private _storageKey = '';
   private _players = new Map<string, ToPlayerConnection>()
   private _controlConn: Signaler;
   private _rtcConfig: RTCConfiguration = {};
@@ -393,11 +390,11 @@ export class MasterPeerConnection {
   onConnectionChange = (room: string | false) => { };
 
   constructor(roomID: string) {
+    let auth = ''
     try {
-      this._storageKey = 'room:' + roomID;
-      this._auth = sessionStorage.getItem(this._storageKey) || '';
-      this._roomID = roomID;
-      console.log('got auth for ', this._roomID, this._auth);
+      if (roomID) {
+        auth = sessionStorage.getItem('room:' + roomID) || '';
+      }
     } catch (ex) {
       console.log('cannot get socket parameters', roomID, ex);
     }
@@ -418,10 +415,8 @@ export class MasterPeerConnection {
         // TODO better error handling.
       } else if (welcome) {
         this._rtcConfig = welcome.config;
-        this._roomID = welcome.room;
-        this._auth = welcome.secret;
-        sessionStorage.setItem(this._storageKey, welcome.secret);
-        this.onConnectionChange(this._roomID);
+        sessionStorage.setItem('room:' + welcome.room, welcome.secret);
+        this.onConnectionChange(welcome.room);
       } else if (newPlayer) {
         const id = newPlayer.player_id;
         console.log(`player ${id} connecting`);
@@ -444,7 +439,7 @@ export class MasterPeerConnection {
     };
     this._controlConn.connect().then(() => {
       console.log('connected to server');
-      this._controlConn.send(new ControlRoom(this._roomID, this._auth));
+      this._controlConn.send(new ControlRoom(roomID, auth));
     });
   }
 

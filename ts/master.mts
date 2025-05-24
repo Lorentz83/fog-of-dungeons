@@ -131,7 +131,12 @@ class Pagination {
 
     constructor() {
         addEventListener("hashchange", (ev) => {
-            this.forceCheck();
+            const oldURLParts = ev.oldURL.split('#');
+            if (oldURLParts.length == 1) {
+                this.forceCheck();
+            } else {
+                this.forceCheck(oldURLParts[1])
+            }
         });
     }
 
@@ -143,11 +148,20 @@ class Pagination {
         return '#map=' + id;
     }
 
-    forceCheck() {
+    forceCheck(oldHash: string = '') {
         const h = new URLSearchParams(window.location.hash.substring(1));
-        if (h.has("map")) {
-            const mapId = h.get("map")!;
-            const roomId = h.get("room") || '';
+
+        if (oldHash) {
+            const oldH = new URLSearchParams(oldHash);
+
+            if (oldH.get('map') == h.get('map')) {
+                return;
+            }
+        }
+
+        if (h.has('map')) {
+            const mapId = h.get('map')!;
+            const roomId = h.get('room') || '';
             this.onEdit(mapId, roomId);
             document.body.classList.add('edit_mode');
         } else {
