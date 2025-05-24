@@ -105,7 +105,7 @@ func (s *Signaler) master(ctx context.Context, c *websocket.Conn) {
 	}
 
 	// Enter the room
-	room, err := s.place.ControlRoom(welcome.Room, m.Secret, c)
+	room, err := s.place.ControlRoom(welcome.Room, welcome.Secret, c)
 	if err != nil {
 		jError(ctx, c, err.Error())
 		c.Close(websocket.StatusUnsupportedData, "Unauthorized")
