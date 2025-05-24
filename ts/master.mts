@@ -127,7 +127,7 @@ class NewMapDialog {
 
 class Pagination {
     onLanding = () => {};
-    onEdit = (id: string) => {};
+    onEdit = (mapId: string, roomId: string) => {};
 
     constructor() {
         addEventListener("hashchange", (ev) => {
@@ -147,7 +147,8 @@ class Pagination {
         const h = new URLSearchParams(window.location.hash.substring(1));
         if (h.has("map")) {
             const mapId = h.get("map")!;
-            this.onEdit(mapId);
+            const roomId = h.get("room") || '';
+            this.onEdit(mapId, roomId);
             document.body.classList.add('edit_mode');
         } else {
             document.body.classList.remove('edit_mode');
@@ -200,11 +201,11 @@ async function initMaster() {
         populateMapList(storage, mapList, (id: string) => pagination.makeEditMapLink(id));
         painter.reset();
     };
-    pagination.onEdit = async (mapID: string) => {
+    pagination.onEdit = async (mapID: string, roomID: string) => {
         try {
             if ( window.location.search == '?beta' ) {
                 console.log('USING BETA API');
-                api = new MasterPeerConnection(mapID);
+                api = new MasterPeerConnection(roomID);
             } else {
                 api = new MasterSocket(mapID);
             }

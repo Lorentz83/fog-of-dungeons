@@ -142,7 +142,7 @@ class PeerConnection {
 
   // Connect to webRTC following the perfect negotiation pattern.
   // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation
-  // 
+  //
   // Config is the initial configuration.
   // signaler is used only to exchange candidates, no other message is handled, server errors are just logged.
   // one peer must be polite, the other must be not polite.
@@ -299,7 +299,7 @@ export class PlayerPeerConnection {
         this.onConnectionChange(false);
       }
     };
-    
+
     master.onMessage = (msg) => {
       console.log('received p2p message', msg);
       const data = JSON.parse(msg);
@@ -328,7 +328,7 @@ export class PlayerPeerConnection {
 class IDSignaler implements ISignaler{
   private _signaler: Signaler;
   private _playerID: string;
-  
+
   onMessage = (msg: any) => {};
 
   constructor(sender: Signaler, playerID: string){
@@ -357,7 +357,7 @@ class IDSignaler implements ISignaler{
 class ToPlayerConnection {
   private _signaler: IDSignaler;
   private _conn: PeerConnection
-  
+
   onPeerConnectionChange = (connected: boolean) => {};
 
   constructor(s: IDSignaler, cfg: RTCConfiguration) {
@@ -369,7 +369,7 @@ class ToPlayerConnection {
       this.onPeerConnectionChange(connected);
     };
   }
-  
+
   close() {
     this._signaler.close();
     this._conn.close();
@@ -392,16 +392,14 @@ export class MasterPeerConnection {
   // with the roomID or with false if the control connection is closed.
   onConnectionChange = (room: string | false) => { };
 
-  constructor(mapID: string) {
+  constructor(roomID: string) {
     try {
-      // TODO this should be a best effort, on auth error should give up.
-      this._storageKey = 'map:' + mapID;
-      const s = JSON.parse(sessionStorage.getItem(this._storageKey) || '{}');
-      this._roomID = s.id || '';
-      this._auth = s.auth || '';
-      console.log('got auth for ', mapID, s);
+      this._storageKey = 'room:' + roomID;
+      this._auth = sessionStorage.getItem(this._storageKey) || '';
+      this._roomID = roomID;
+      console.log('got auth for ', this._roomID, this._auth);
     } catch (ex) {
-      console.log('cannot get socket parameters', mapID, ex);
+      console.log('cannot get socket parameters', roomID, ex);
     }
 
     this._controlConn = new Signaler('master');
@@ -441,7 +439,7 @@ export class MasterPeerConnection {
       } else if (negotiation) {
         // Nothing to do, IDSignaler handles this already.
       } else {
-        console.log('unknown message', msg); 
+        console.log('unknown message', msg);
       }
     };
     this._controlConn.connect().then(() => {
