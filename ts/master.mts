@@ -1,8 +1,11 @@
 import { MasterSocket } from "./api.mjs"
 import { MasterPeerConnection } from "./apiv2.mjs"
-import { PositionedMarker, MarkerIcon, keepAwakeCheckbox } from "./common.mjs"
+import { PositionedMarker, MarkerIcon, KeepAwake} from "./common.mjs"
 import { MapStorage, StoredMap } from "./storage.mjs"
 import { Painter } from "./painter.mjs"
+
+
+const keepAwake = new KeepAwake();
 
 
 async function populateMapList(storage: MapStorage, ul: HTMLElement, makeLink: (id:string) => string) {
@@ -42,7 +45,7 @@ class AddMarkerDialog {
         const img = this._dialog.querySelector('img') as HTMLImageElement;
         const w = + (img.dataset.width as string);
         const h = + (img.dataset.height as string);
-        
+
         img.addEventListener('click', ev => {
             const rect = img.getBoundingClientRect();
             const x = ev.clientX - rect.left;
@@ -52,7 +55,7 @@ class AddMarkerDialog {
             // are referenced with the same relative URL in both
             // master and player pages.
             const src = img.getAttribute('src') as string;
-            
+
             const config = {
                 width: w,
                 height: h,
@@ -64,7 +67,7 @@ class AddMarkerDialog {
             this.onSelect(config);
         });
     }
-    
+
     showModal() {
         this._dialog.showModal();
     }
@@ -87,7 +90,7 @@ class NewMapDialog {
         this._fogColor = document.querySelector('#new_map_dialog input[name="fog_color"]') as HTMLInputElement;
         this._file = document.querySelector('#new_map_dialog input[name="map_file"]') as HTMLInputElement;
         this._submit = document.querySelector('#new_map_dialog button[value="submit"]') as HTMLButtonElement;
-        
+
         this._submit.addEventListener('click', (ev) => this._submitHandler(ev) );
 
         document.querySelector('#new_map_dialog button[value="cancel"]')!.addEventListener('click', (ev) => { this._form.reset() });
@@ -101,7 +104,7 @@ class NewMapDialog {
         this._dialog.close();
         this._form.reset();
     }
-    
+
     private async _submitHandler(ev: Event) {
         if ( ! this._form.reportValidity() ) {
             return;
@@ -136,11 +139,11 @@ class Pagination {
     navigateEditMap(id: string) {
         window.location.hash = this._editPrefix + id;
     }
-    
+
     makeEditMapLink(id: string) {
         return this._editPrefix + id;
     }
-    
+
     forceCheck() {
         const h = window.location.hash;
         if ( h.startsWith(this._editPrefix) ) {
@@ -165,8 +168,6 @@ interface API {
 }
 
 async function initMaster() {
-    const keepAwake = keepAwakeCheckbox(document.getElementById('keep_awake') as HTMLInputElement);
-    
     const storage = await MapStorage.init();
     const painter = new Painter(document.getElementById('map_container') as HTMLDivElement);
 
@@ -195,7 +196,6 @@ async function initMaster() {
     let api: API | null;
     const pagination = new Pagination();
     pagination.onLanding = () => {
-        keepAwake.disable();
         if (api) {
             api.close();
             api = null;
@@ -266,9 +266,9 @@ async function initMaster() {
 
     const addMarkerDialog  = new AddMarkerDialog();
     addMarkerDialog.onSelect = (cfg) => painter.addMarker(cfg);
-    
+
     document.getElementById('add_marker')!.addEventListener('click', ()=> addMarkerDialog.showModal() );
-    
+
     const newMapDialog = new NewMapDialog();
     newMapDialog.onAccept = async (name: string, img: Blob, color: string) : Promise<void> => {
         painter.notifyDefogCallback = null;
@@ -290,7 +290,7 @@ async function initMaster() {
         painter.reset();
         pagination.navigateEditMap(map.id);
     };
-    
+
     document.getElementById('new_map_btn')!.addEventListener('click', () => {
         newMapDialog.showModal();
     });
