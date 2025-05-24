@@ -2,21 +2,6 @@
 const idAlphabet = '23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
 const idAlphabetLen = idAlphabet.length;
 
-// keepAwakeCheckbox links a checkbox to the KeepAwake class.
-export function keepAwakeCheckbox(checkBox: HTMLInputElement): KeepAwake {
-    checkBox.checked = false;
-    const keepAwake = new KeepAwake();
-    if ( !keepAwake.isSupported ) {
-        checkBox.disabled = true;
-        return keepAwake;
-    }
-    keepAwake.onChange = (enabled) => { checkBox.checked = enabled };
-
-    checkBox.addEventListener('change', () => { keepAwake.set(checkBox.checked) });
-
-    return keepAwake;
-}
-
 // KeepAwake is a convenience wrapper around the wake lock API.
 export class KeepAwake {
     readonly isSupported: boolean;
@@ -30,8 +15,9 @@ export class KeepAwake {
             return;
         }
         document.addEventListener('visibilitychange', () => this._handleVisibilityChange() );
+        this.set(true);
     }
-    
+
     async set(enable: boolean): Promise<void> {
         if ( enable ) {
             return this.enable();

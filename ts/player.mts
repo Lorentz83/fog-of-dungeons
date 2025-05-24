@@ -1,7 +1,9 @@
 import { PlayerSocket } from "./api.mjs"
 import { PlayerPeerConnection } from "./apiv2.mjs"
-import { keepAwakeCheckbox } from "./common.mjs" 
+import { KeepAwake } from "./common.mjs"
 import { MarkerPlacer } from "./painter.mjs"
+
+const keepAwake = new KeepAwake();
 
 class ImageSwitcher {
     private _container: HTMLDivElement;
@@ -19,7 +21,7 @@ class ImageSwitcher {
 
         this._img1.addEventListener('load', (e) => this._switch(e) );
         this._img2.addEventListener('load', (e) => this._switch(e) );
-        
+
         container.classList.add('image_switcher');
         // The size of the switcher is the size of img1.
         // Setting the initial image as alt, we allow resizing from
@@ -37,7 +39,7 @@ class ImageSwitcher {
         }
         this._container.classList.toggle('image_switcher_alt');
     }
-    
+
     set src(val: string) {
         this._lastImgSet = this._img2;
         if ( this._container.classList.contains('image_switcher_alt') ) {
@@ -73,7 +75,7 @@ function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement)
 
     const img = new ImageSwitcher(container, './spinner.gif');
     const markerPlacer = new MarkerPlacer(container);
-    
+
     let api: API;
     if ( window.location.search == '?beta' ) {
         console.log('USING BETA API');
@@ -90,12 +92,12 @@ function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement)
             status.innerText = `room: ${room}`;
         }
     };
-    
+
     api.connect().catch(ex => {
         console.error('API error: ', ex)
         container.innerText = 'Error: check your internet connection and check your master is online';
     });
-    
+
     ret.close = () => { api.close() };
     ret.reconnect = () => {api.connect() };
     return ret;
@@ -113,9 +115,9 @@ function adjustZoom() {
         const zw = vp.width / zoomable.offsetWidth;
         const zh = vp.height / zoomable.offsetHeight;
         const zoom = Math.min(zw, zh);
-        // Note: despite the zoom property should be better, it looks like it doesn't 
+        // Note: despite the zoom property should be better, it looks like it doesn't
         // scale everything the same way.
-        // Also, nor zoom or scale can be applied to the full screen element. 
+        // Also, nor zoom or scale can be applied to the full screen element.
         zoomable.style.transform = `scale(${zoom})`;
     } else {
         zoomable.style.transform = 'none';
@@ -138,7 +140,7 @@ function playerInit() {
         const container = document.getElementById('map_container') as HTMLDivElement;
         const status = document.getElementById('status') as HTMLElement;
         let connection = loadMap(roomID, container, status);
-        
+
         addEventListener('hashchange', () => {
             connection.close();
             const id = getRoomID();
@@ -159,8 +161,6 @@ function playerInit() {
         }
         alert(msg);
     }
-
-    keepAwakeCheckbox(document.getElementById('keep_awake') as HTMLInputElement);
 
     document.getElementById('fullscreen_btn')!.addEventListener('click', () => {
         document.getElementById('fullscreen_area')!.requestFullscreen();
