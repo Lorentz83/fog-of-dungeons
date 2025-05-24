@@ -420,7 +420,7 @@ export class MasterPeerConnection {
         this._rtcConfig = welcome.config;
         this._roomID = welcome.room;
         this._auth = welcome.secret;
-        sessionStorage.setItem(this._storageKey, JSON.stringify({id: welcome.room, auth: welcome.secret}));
+        sessionStorage.setItem(this._storageKey, welcome.secret);
         this.onConnectionChange(this._roomID);
       } else if (newPlayer) {
         const id = newPlayer.player_id;
