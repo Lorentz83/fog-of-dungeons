@@ -1,11 +1,12 @@
 import { MasterSocket } from "./api.mjs"
 import { MasterPeerConnection } from "./apiv2.mjs"
-import { PositionedMarker, MarkerIcon, KeepAwake} from "./common.mjs"
+import { PositionedMarker, MarkerIcon, KeepAwake, SnackBar} from "./common.mjs"
 import { MapStorage, StoredMap } from "./storage.mjs"
 import { Painter } from "./painter.mjs"
 
 
 const keepAwake = new KeepAwake();
+const snackBar = new SnackBar();
 
 
 async function populateMapList(storage: MapStorage, ul: HTMLElement, makeLink: (id:string) => string) {
@@ -25,7 +26,7 @@ async function populateMapList(storage: MapStorage, ul: HTMLElement, makeLink: (
                 .then( () => li.remove() )
                 .catch( (ex) => {
                     b.disabled = false;
-                    alert(ex.message);
+                    snackBar.alert(ex.message);
                 });
         };
         li.appendChild(b);
@@ -118,7 +119,7 @@ class NewMapDialog {
             await this.onAccept(name, img, color);
             this.close();
         } catch(ex) {
-            alert(ex); // TODO nicer error message.
+            snackBar.alert(`error ${ex}`); // TODO nicer error message.
         } finally {
             this._submit.disabled = false;
         }
@@ -194,7 +195,7 @@ async function initMaster() {
 
     playerLinkShare.addEventListener('click', (ev) => {
         if ( playerLink.value == '' ) {
-            alert('Check your internet connection and try to interact with the map again to see if you can reconnect.');
+            snackBar.alert('Check your internet connection and try to interact with the map again to see if you can reconnect.');
             return;
         }
         try {
@@ -205,7 +206,7 @@ async function initMaster() {
         } catch (ex) {
             // If browser doesn't support share window, let's copy to clipboard.
             navigator.clipboard.writeText(playerLink.value);
-            // TODO add a snackbar to notify the action.
+            snackBar.info('Link copied to clipboard!');
         }
     });
 
@@ -259,7 +260,7 @@ async function initMaster() {
                     if ( ex instanceof Error ) {
                         msg = ex.message;
                     }
-                    alert(msg);
+                    snackBar.alert(msg);
                 }
             };
 
@@ -267,7 +268,7 @@ async function initMaster() {
                 Promise.all([
                     api!.sendMarkers(markers),
                     storage.saveMapLayer(mapID, 'markers', markers)
-                ]).catch( (ex) => alert(ex.message) );
+                ]).catch( (ex) => snackBar.alert(ex.message) );
             }
 
             const map = await storage.getMap(mapID);
@@ -286,7 +287,7 @@ async function initMaster() {
             if ( ex instanceof Error ) {
                 msg = ex.message
             }
-            alert(msg);
+            snackBar.alert(msg);
         }
     };
     pagination.forceCheck();
