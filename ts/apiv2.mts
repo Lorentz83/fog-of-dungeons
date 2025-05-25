@@ -225,6 +225,7 @@ class PeerConnection {
           this.onConnectionChange(true);
           break;
         case 'failed':
+        case 'disconnected':
           this.onConnectionChange(false);
           break;
         case 'closed':
@@ -389,6 +390,9 @@ export class MasterPeerConnection {
   // with the roomID or with false if the control connection is closed.
   onConnectionChange = (room: string | false) => { };
 
+  // Callback to signal the number of players connected.
+  onPlayersChange = (players: number) => {};
+
   constructor(roomID: string) {
     let auth = ''
     try {
@@ -430,6 +434,7 @@ export class MasterPeerConnection {
             console.log(`player ${id} disconnected`);
             this._players.delete(id);
           }
+            this.onPlayersChange(this._players.size);
         };
       } else if (negotiation) {
         // Nothing to do, IDSignaler handles this already.

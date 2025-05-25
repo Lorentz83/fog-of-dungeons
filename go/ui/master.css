@@ -20,17 +20,59 @@
   }
 }
 
-#edit_page:not(:has(#show_controls:checked)) #edit_controls {
+#edit_page:not(:has(#show_controls:checked)) #side_bar {
   margin-left: calc(-1 * var(--sidebar-width));
 }
 
+#player_link {
+  text-overflow: ellipsis;
+  /* This is kinda an hack to clip the beginning of the URL since the most interesting part is the end */
+  direction: rtl;
+}
+
+.align_right {
+  text-align: right;
+}
+
+input[type='text'] {
+  padding: 2px 5px;
+  border-radius: 7px;
+  border-style: ridge;
+}
+
+button {
+  cursor: pointer;
+}
+
+.button_in_text {
+  position: relative;
+  input {
+    padding-right: 3ex;
+  }
+  button {
+    width: 3ex;
+    height: 3ex;
+    border-radius: 2em;
+    border: none;
+    background: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+    img {
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
 .main {
-  --sidebar-width: 14em;
+  --sidebar-width: 16em;
   min-height: 100vh;
   position: relative;
   display: flex;
 
-  #edit_controls {
+  #side_bar {
     margin-left: 0;
     box-shadow: 0 0 10px black;
     transition: margin-left 0.4s ease-in-out;
@@ -40,6 +82,17 @@
     box-sizing: border-box;
     width: var(--sidebar-width);
     overflow: hidden;
+
+    label {
+      display: block;
+      width: 100%;
+      margin-bottom: 1ex;
+      input {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
   }
 }
 

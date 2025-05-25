@@ -11,6 +11,9 @@ export class MasterSocket {
     // with the roomID or with false if the connection is closed.
     onConnectionChange = (room: string | false) => {};
     
+    // Never called, for compatibility with API v2.
+    onPlayersChange = (players: number) => {};
+
     constructor(mapID: string) {
         try {
             // TODO this should be a best effort, on auth error should give up.

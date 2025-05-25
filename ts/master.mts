@@ -176,7 +176,8 @@ interface API {
     sendMarkers(markers: PositionedMarker[]): any
     sendMap(arg0: string): unknown
     close(): void;
-    onConnectionChange: (room: any) => void;
+    onConnectionChange: (room: string | false) => void;
+    onPlayersChange: (numPlayers: number) => void;
 }
 
 async function initMaster() {
@@ -185,23 +186,26 @@ async function initMaster() {
 
     const mapList = document.getElementById('map_list') as HTMLElement;
 
-    const playerLink = document.getElementById('player_link') as HTMLAnchorElement;
-    const status = document.getElementById('status') as HTMLElement;
+    const playerLink = document.getElementById('player_link') as HTMLInputElement;
+    const playerLinkShare = document.getElementById('player_link_share') as HTMLButtonElement;
+    const serverStatus = document.getElementById('server_status') as HTMLInputElement;
     const disconnectedChip = document.getElementById('disconnected')!;
+    const playersNum = document.getElementById('players_num') as HTMLInputElement;
 
-    playerLink.addEventListener('click', (ev) => {
-        if ( playerLink.getAttribute('href') === '#' ) {
+    playerLinkShare.addEventListener('click', (ev) => {
+        if ( playerLink.value == '' ) {
             alert('Check your internet connection and try to interact with the map again to see if you can reconnect.');
-            ev.preventDefault();
+            return;
         }
         try {
             navigator.share({
-                url: playerLink.href,
+                url: playerLink.value,
                 title: 'Fog of Dungeons',
             });
-            ev.preventDefault();
         } catch (ex) {
-            // Ignore the error, we'll open the link in a new tab.
+            // If browser doesn't support share window, let's copy to clipboard.
+            navigator.clipboard.writeText(playerLink.value);
+            // TODO add a snackbar to notify the action.
         }
     });
 
@@ -223,16 +227,21 @@ async function initMaster() {
             } else {
                 api = new MasterSocket(mapID);
             }
+            api.onPlayersChange = (numPlayers) => {
+                playersNum.value = `${numPlayers}`;
+            };
             api.onConnectionChange = (room) => {
                 if ( room === false ) {
                     disconnectedChip.style.visibility = 'visible';
-                    status.innerText = 'disconnected';
-                    playerLink.href = '#';
+                    serverStatus.value = 'disconnected';
+                    playerLink.value = '';
 
                 } else {
                     disconnectedChip.style.visibility = 'hidden';
-                    status.innerText = `room: ${room}`;
-                    playerLink.href = `./player.html${window.location.search}#id=${room}`
+                    serverStatus.value = `Room: ${room}`;
+                    
+                    // TODO here we assume we serve always from /
+                    playerLink.value = `${location.protocol}//${location.host}/player.html${window.location.search}#id=${room}`
 
                     const hashParams = new URLSearchParams(window.location.hash.substring(1));
                     hashParams.set('room', room);

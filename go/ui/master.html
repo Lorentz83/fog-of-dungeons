@@ -59,18 +59,41 @@
           <div id="disconnected" title="Check your internet connection">Disconnected</div>
         </header>
         <div class="main">
-          <div id="edit_controls">
-              <a href="#">Back</a>
-              <label>
-                  Fog opacity: <input id="fog_opacity" min="0" max="100" value="80" type="range"/>
-              </label>
-              <label>
-                  Defog size: <input id="defog_size" min="5" max="100" value="30" type="range"/>
-              </label>
-              <button id="undo">Undo</button>
-              <button id="add_marker">Add marker</button>
-              <span id="status"></span>
-              <a href="#" target="_blank" id="player_link">Player link</a>
+          <div id="side_bar">
+              <a href="#">Back to home page</a>
+              <fieldset>
+                <legend>Map edit</legend>
+                <label title="Only affects master's view">
+                    Fog opacity: <input id="fog_opacity" min="0" max="100" value="80" type="range"/>
+                </label>
+                <label title="Change the ereaser size">
+                    Defog size: <input id="defog_size" min="5" max="100" value="30" type="range"/>
+                </label>
+                <button id="undo" title="Undoe the last action (ctrl + z)">Undo</button>
+                <button id="add_marker" title="Add a marker that can be moved on the map">Add marker</button>
+              </fieldset>
+              <fieldset>
+                <legend>Connection</legend>
+                <label>
+                  Server status:
+                  <input type="text" readonly id="server_status" value="disconnected"/>
+                </label>
+                <label>
+                  Share link:
+                  <div class="button_in_text">
+                    <input type="text" readonly id="player_link" value="disconnected"/>
+                    <!-- TODO add credit https://www.iconpacks.net/free-icon/share-social-3106.html -->
+                    <button id="player_link_share" title="Share player link">
+                      <img alt="share" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjEiIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiB2aWV3Qm94PSIwIDAgMjU2IDI1NiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxnIHN0eWxlPSJzdHJva2U6IG5vbmU7IHN0cm9rZS13aWR0aDogMDsgc3Ryb2tlLWRhc2hhcnJheTogbm9uZTsgc3Ryb2tlLWxpbmVjYXA6IGJ1dHQ7IHN0cm9rZS1saW5lam9pbjogbWl0ZXI7IHN0cm9rZS1taXRlcmxpbWl0OiAxMDsgZmlsbDogbm9uZTsgZmlsbC1ydWxlOiBub256ZXJvOyBvcGFjaXR5OiAxOyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMS40MDY1OTM0MDY1OTM0MDE2IDEuNDA2NTkzNDA2NTkzNDAxNikgc2NhbGUoMi44MSAyLjgxKSI+Cgk8cGF0aCBkPSJNIDcwLjU4NCA1MS4xNDggYyAtNi4zMzEgMCAtMTEuOTQ3IDMuMDYgLTE1LjQ5MyA3Ljc2MyBsIC0xNy4wMzkgLTguNTEzIGMgMC40OTggLTEuNzE2IDAuNzc5IC0zLjUyNCAwLjc3OSAtNS4zOTkgYyAwIC0xLjg3NSAtMC4yODEgLTMuNjgyIC0wLjc3OSAtNS4zOTggbCAxNy4wMzkgLTguNTEzIGMgMy41NDcgNC43MDMgOS4xNjIgNy43NjIgMTUuNDkzIDcuNzYyIEMgODEuMjkgMzguODUyIDkwIDMwLjE0MiA5MCAxOS40MzYgQyA5MCA4LjczIDgxLjI5IDAuMDIgNzAuNTg0IDAuMDIgUyA1MS4xNjggOC43MyA1MS4xNjggMTkuNDM2IGMgMCAxLjg3NSAwLjI4MSAzLjY4MiAwLjc3OSA1LjM5OSBsIC0xNy4wMzggOC41MTIgYyAtMy41NDcgLTQuNzAzIC05LjE2MiAtNy43NjMgLTE1LjQ5MyAtNy43NjMgQyA4LjcxIDI1LjU4NCAwIDM0LjI5NCAwIDQ1IHMgOC43MSAxOS40MTYgMTkuNDE2IDE5LjQxNiBjIDYuMzMxIDAgMTEuOTQ2IC0zLjA2IDE1LjQ5MyAtNy43NjMgbCAxNy4wMzggOC41MTMgYyAtMC40OTggMS43MTYgLTAuNzc5IDMuNTI0IC0wLjc3OSA1LjM5OSBjIDAgMTAuNzA1IDguNzEgMTkuNDE1IDE5LjQxNiAxOS40MTUgUyA5MCA4MS4yNyA5MCA3MC41NjQgQyA5MCA1OS44NTggODEuMjkgNTEuMTQ4IDcwLjU4NCA1MS4xNDggeiBNIDcwLjU4NCA3LjAyIEMgNzcuNDMxIDcuMDIgODMgMTIuNTkgODMgMTkuNDM2IHMgLTUuNTY5IDEyLjQxNiAtMTIuNDE2IDEyLjQxNiBzIC0xMi40MTYgLTUuNTY5IC0xMi40MTYgLTEyLjQxNiBTIDYzLjczNyA3LjAyIDcwLjU4NCA3LjAyIHogTSAxOS40MTYgNTcuNDE2IEMgMTIuNTcgNTcuNDE2IDcgNTEuODQ3IDcgNDUgcyA1LjU3IC0xMi40MTYgMTIuNDE2IC0xMi40MTYgUyAzMS44MzIgMzguMTUzIDMxLjgzMiA0NSBTIDI2LjI2MiA1Ny40MTYgMTkuNDE2IDU3LjQxNiB6IE0gNzAuNTg0IDgyLjk3OSBjIC02Ljg0NyAwIC0xMi40MTYgLTUuNTY5IC0xMi40MTYgLTEyLjQxNSBjIDAgLTYuODQ3IDUuNTY5IC0xMi40MTYgMTIuNDE2IC0xMi40MTYgUyA4MyA2My43MTggODMgNzAuNTY0IEMgODMgNzcuNDEgNzcuNDMxIDgyLjk3OSA3MC41ODQgODIuOTc5IHoiIHN0eWxlPSJzdHJva2U6IG5vbmU7IHN0cm9rZS13aWR0aDogMTsgc3Ryb2tlLWRhc2hhcnJheTogbm9uZTsgc3Ryb2tlLWxpbmVjYXA6IGJ1dHQ7IHN0cm9rZS1saW5lam9pbjogbWl0ZXI7IHN0cm9rZS1taXRlcmxpbWl0OiAxMDsgZmlsbDogcmdiKDI5LDI5LDI3KTsgZmlsbC1ydWxlOiBub256ZXJvOyBvcGFjaXR5OiAxOyIgdHJhbnNmb3JtPSIgbWF0cml4KDEgMCAwIDEgMCAwKSAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L2c+Cjwvc3ZnPg==" />
+                    </button>
+                  </div>
+                </label>
+                <label>
+                  Players connected:
+                  <input type="text" class="align_right" readonly id="players_num" value="0"/>
+                </label>
+              </fieldset>
+              
           </div>
           <div id="map_container">
           </div>
