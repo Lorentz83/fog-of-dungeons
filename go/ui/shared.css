@@ -2,11 +2,6 @@ body {
     margin: 0;
 }
 
-::backdrop {
-    background-color: #000a;
-    backdrop-filter: blur(4px);
-}
-
 label {
     user-select: none;
 }
@@ -77,3 +72,37 @@ header>* {
     transform: scale(4);
     opacity: 0;
 }
+
+/* dialog opening and closing animation */
+dialog {
+    opacity: 0;
+    transition: .5s all allow-discrete;
+    &:open {
+        opacity: 1;
+
+        @starting-style {
+            opacity: 0;
+        }
+    }
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    transition: .5s all allow-discrete;
+}
+  
+dialog:open::backdrop {
+    background-color: #000a;
+    backdrop-filter: blur(4px);
+}
+  
+/* This starting-style rule cannot be nested inside the above selector
+because the nesting selector cannot represent pseudo-elements. */
+@starting-style {
+    dialog:open::backdrop {
+        background-color: rgba(0, 0, 0, 0);
+        backdrop-filter: blur(0px);
+    }
+}
+  

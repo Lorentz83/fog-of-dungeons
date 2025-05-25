@@ -69,10 +69,15 @@ export  class SnackBar {
     private _colorBox: HTMLElement;
     private _textContent: HTMLDivElement;
     private _closeBtn: HTMLButtonElement;
+    private _timer?: number;
+    private _timeoutMS: number;
 
-    constructor() {
+    constructor(closeTimeoutMS: number = 3000) {
+        this._timeoutMS = closeTimeoutMS; 
+
         this._dialog = document.createElement('dialog');
         document.body.appendChild(this._dialog);
+        this._dialog.classList.add('snackbar');
         this._dialog.style.position = 'fixed';
         this._dialog.style.bottom = '50px';
         this._dialog.style.zIndex = '10000';
@@ -127,6 +132,10 @@ export  class SnackBar {
         this._textContent.textContent = message;
         this._dialog.show();
         this._closeBtn.blur(); // unfocus to remove border.
+
+        this._timer = setTimeout(() => {
+            this.close();
+        }, this._timeoutMS);
     }
     
     alert(message: string) {
@@ -139,6 +148,8 @@ export  class SnackBar {
 
     close() {
         this._dialog.close();
+        clearTimeout(this._timer);
+        this._timer = undefined;
     }
 }
 
