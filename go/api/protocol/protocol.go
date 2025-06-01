@@ -1,7 +1,5 @@
 // Package protocol contains the messages sent between server and clients.
 //
-// In API v2:
-//
 // 1. The player must connect to `player` handler using a webRTC connection.
 // 2. The player must send a JoinRoom message.
 // 3. The server answers with a WelcomePlayer message.

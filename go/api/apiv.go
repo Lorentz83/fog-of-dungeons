@@ -2,17 +2,25 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	crand "crypto/rand"
+
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/lorentz83/fogofdungeons/api/cache"
 	"github.com/lorentz83/fogofdungeons/api/game"
 	"github.com/lorentz83/fogofdungeons/api/protocol"
+	"github.com/lorentz83/fogofdungeons/metric"
+)
+
+var (
+	generatedIDs = metric.NewInt("/api/generated_rooms_id")
+	storedRooms  = metric.NewInt("/api/stored_rooms")
 )
 
 // Signaler implements the websocket api for negotiating WebRTC master/players communication.
@@ -98,10 +106,10 @@ func (s *Signaler) master(ctx context.Context, c *websocket.Conn) {
 
 	// Validation
 	if l := len(welcome.Room); l < 4 {
-		welcome.Room = cache.GenID()
+		welcome.Room = genID()
 	}
 	if len(m.Secret) == 0 {
-		welcome.Secret = cache.GenAuth()
+		welcome.Secret = genAuth()
 	}
 
 	// Enter the room
@@ -180,4 +188,28 @@ func (s *Signaler) player(ctx context.Context, c *websocket.Conn) {
 
 func jError(ctx context.Context, c *websocket.Conn, msg string) {
 	wsjson.Write(ctx, c, protocol.Error{Error: msg})
+}
+
+var idAlphabet = ([]rune)("23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ")
+
+func genID() string {
+	generatedIDs.Add(1)
+
+	var mod = int64(len(idAlphabet))
+	var ret []rune
+	// TODO here it is hardcoded max 1 game room per second.
+	for i := time.Now().Unix(); i > 0; i = i / mod {
+		r := idAlphabet[i%mod]
+		ret = append(ret, r)
+	}
+	return string(ret)
+}
+
+func genAuth() string {
+	b := make([]byte, 25)
+	_, err := crand.Read(b)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	return base64.RawStdEncoding.EncodeToString(b)
 }

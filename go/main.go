@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"syscall"
 	"time"
@@ -30,22 +31,19 @@ var (
 	playerQueue = flag.Int("player_queue", 5, "how many messages are stored in a queue before we consider a player unresponsive")
 
 	webRTCConfig = flag.String("webrtc_config", `{"iceServers": [{"urls": "stun:stun.l.google.com:19302"}]}`, "ICE servers to use to negotiate webRTC connection, if disabled peers may connect only on the same network")
+
+	basePath = flag.String("base_path", "/beta", "the base path of the URL to serve. Empty to serve on root")
 )
 
 func main() {
 	flag.Parse()
-
-	ah, err := api.NewAPI("/api/", *expiration, *playerQueue)
-	if err != nil {
-		log.Fatalf("cannot create API: %v", err)
-	}
 
 	var config protocol.RTCConfiguration
 	if err := json.Unmarshal([]byte(*webRTCConfig), &config); err != nil {
 		log.Fatalf("invalid --webrtc_config flag: %v", err)
 	}
 	log.Printf("using webRTC config; %v", config)
-	ahv2, err := api.NewSignaler("/apiv2/", *expiration, config)
+	api, err := api.NewSignaler("/api/", *expiration, config)
 	if err != nil {
 		log.Fatalf("cannot create APIv2: %v", err)
 	}
@@ -63,9 +61,8 @@ func main() {
 	}
 
 	m := http.NewServeMux()
-	m.Handle("/", &server.IndexFile{H: staticHandler, Index: "/master.html"})
-	m.Handle("/api/", ah)
-	m.Handle("/apiv2/", ahv2)
+	m.Handle(path.Join(*basePath)+"/", http.StripPrefix(*basePath, &server.IndexFile{H: staticHandler, Index: "/master.html"}))
+	m.Handle(path.Join(*basePath, "/api/")+"/", http.StripPrefix(*basePath, api))
 
 	s := &server.Logger{H: m}
 
@@ -102,5 +99,4 @@ func main() {
 	if err := hs.ListenAndServe(); err != nil {
 		log.Fatalf("HTTP Server error: %v", err)
 	}
-
 }

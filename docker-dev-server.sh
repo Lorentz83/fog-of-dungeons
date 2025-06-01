@@ -3,7 +3,7 @@
 # Set up a docker container which watches for file changes and rebuild
 # the code (both typescript and go) whenever needed.
 
-function _get_command {
+_get_command() {
   if command -v docker 2>/dev/null >&2 ; then
     echo "docker"
   else

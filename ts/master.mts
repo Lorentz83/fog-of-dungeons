@@ -1,5 +1,4 @@
-import { MasterSocket } from "./api.mjs"
-import { MasterPeerConnection } from "./apiv2.mjs"
+import { MasterPeerConnection } from "./api.mjs"
 import { PositionedMarker, MarkerIcon, KeepAwake, SnackBar} from "./common.mjs"
 import { MapStorage, StoredMap } from "./storage.mjs"
 import { Painter } from "./painter.mjs"
@@ -172,15 +171,6 @@ class Pagination {
     }
 }
 
-
-interface API {
-    sendMarkers(markers: PositionedMarker[]): any
-    sendMap(arg0: string): unknown
-    close(): void;
-    onConnectionChange: (room: string | false) => void;
-    onPlayersChange: (numPlayers: number) => void;
-}
-
 async function initMaster() {
     const storage = await MapStorage.init();
     const painter = new Painter(document.getElementById('map_container') as HTMLDivElement);
@@ -210,7 +200,7 @@ async function initMaster() {
         }
     });
 
-    let api: API | null;
+    let api: MasterPeerConnection | null;
     const pagination = new Pagination();
     pagination.onLanding = () => {
         if (api) {
@@ -222,12 +212,7 @@ async function initMaster() {
     };
     pagination.onEdit = async (mapID: string, roomID: string) => {
         try {
-            if ( window.location.search == '?beta' ) {
-                console.log('USING BETA API');
-                api = new MasterPeerConnection(roomID);
-            } else {
-                api = new MasterSocket(mapID);
-            }
+            api = new MasterPeerConnection(roomID);
             api.onPlayersChange = (numPlayers) => {
                 playersNum.value = `${numPlayers}`;
             };
@@ -241,8 +226,10 @@ async function initMaster() {
                     disconnectedChip.style.visibility = 'hidden';
                     serverStatus.value = `Room: ${room}`;
                     
-                    // TODO here we assume we serve always from /
-                    playerLink.value = `${location.protocol}//${location.host}/player.html${window.location.search}#id=${room}`
+                    const a = document.createElement('a')
+                    a.href = `./player.html${window.location.search}#id=${room}`;
+                    playerLink.value = a.href; // The browser creates the full URL for us.
+                    a.remove();
 
                     const hashParams = new URLSearchParams(window.location.hash.substring(1));
                     hashParams.set('room', room);
