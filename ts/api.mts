@@ -302,7 +302,6 @@ export class PlayerPeerConnection {
     };
 
     master.onMessage = (msg) => {
-      console.log('received p2p message', msg);
       const data = JSON.parse(msg);
       switch (data.content) {
         case 'merged':
@@ -386,6 +385,9 @@ export class MasterPeerConnection {
   private _controlConn: Signaler;
   private _rtcConfig: RTCConfiguration = {};
 
+  private _lastMap: string | null = null;    // in JSON
+  private _lastMarkers: string | null = null; // in JSON
+
   // Callback which is called when the connection is established
   // with the roomID or with false if the control connection is closed.
   onConnectionChange = (room: string | false) => { };
@@ -430,6 +432,14 @@ export class MasterPeerConnection {
           if ( connected ) {
             console.log(`player ${id} connected`);
             this._players.set(id, c);
+            // TODO there must be a race condition here because at this time the connection
+            // is not ready to send yet.
+            setTimeout( () => {
+              if ( this._lastMap != null )
+                c.send(this._lastMap);
+              if ( this._lastMarkers != null )
+                c.send(this._lastMarkers);
+            }, 200);
           } else {
             console.log(`player ${id} disconnected`);
             this._players.delete(id);
@@ -458,6 +468,7 @@ export class MasterPeerConnection {
 
   async sendMap(data: string) {
     const jData = JSON.stringify({ content: 'merged', data: data });
+    this._lastMap = jData;
     this._players.forEach((conn, id) => {
       try {
         conn.send(jData);
@@ -469,6 +480,7 @@ export class MasterPeerConnection {
 
   async sendMarkers(markers: PositionedMarker[]) {
     const jData = JSON.stringify({ content: 'markers', data: markers });
+    this._lastMarkers = jData;
     this._players.forEach((conn, id) => {
       try {
         conn.send(jData);
