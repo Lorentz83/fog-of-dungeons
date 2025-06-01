@@ -50,16 +50,24 @@ class ImageSwitcher {
 
 class Connection {
     close = () => {}
-    reconnect = () => {}
+    reconnect = () => { Promise.reject('not in a room') }
+    send: (msg: any) => void = (msg: any) => { throw new Error('not in a room') }
+
+    constructor(api?: PlayerPeerConnection) {
+        if ( !api ) {
+            return;
+        }
+        this.close = () => api.close();
+        this.reconnect = () => api.connect();
+        this.send = (msg) => {api.send(msg)};
+    }
 }
 
 function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement): Connection {
-    const ret = new Connection();
-
     if ( !roomID ) {
         container.innerText = 'Ask your master for a map URL.';
         status.innerText = 'disconnected';
-        return ret;
+        return new Connection();;
     }
 
     status.innerText = 'connecting...';
@@ -71,6 +79,7 @@ function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement)
         
     api.onMap = (mapURL) => { img.src = mapURL };
     api.onMarkers = (markers) => { markerPlacer.load(markers, false) };
+    api.onPointer = (x, y) => { markerPlacer.point(x,y) }
     api.onConnectionChange = (room) => {
         if ( room === false ) {
             status.innerText = 'disconnected';
@@ -84,9 +93,7 @@ function loadMap(roomID: string, container: HTMLDivElement, status: HTMLElement)
         container.innerText = 'Error: check your internet connection and check your master is online';
     });
 
-    ret.close = () => { api.close() };
-    ret.reconnect = () => {api.connect() };
-    return ret;
+    return new Connection(api);
 }
 
 function adjustZoom() {
@@ -133,6 +140,16 @@ function playerInit() {
             connection = loadMap(id, container, status);
         } );
 
+        container.addEventListener('click', ev => {
+            if ( ev.detail == 1 )
+                return;
+            // Double or triple click.
+            var rect = container.getBoundingClientRect();
+            var x = ev.clientX - rect.left;
+            var y = ev.clientY - rect.top;
+            connection.send({type: 'pointer', x: x, y: y});
+            ev.preventDefault();
+        });
 
         document.addEventListener('visibilitychange', () => {
             if ( document.visibilityState == 'visible' ) {

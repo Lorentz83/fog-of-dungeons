@@ -242,7 +242,7 @@ class PeerConnection {
     this._peer?.close();
   }
 
-  send(msg: any) {
+  send(msg: string) {
     this._data!.send(msg);
   }
 }
@@ -254,11 +254,16 @@ export class PlayerPeerConnection {
 
   onMap = (data: string) => { };
   onMarkers = (data: PositionedMarker[]) => { };
+  onPointer = (x: number, y: number) => { };
   onConnectionChange = (room: string | false) => { };
 
   constructor(roomID: string) {
     this._roomID = roomID;
     this._controlConn = new Signaler('player');
+  }
+
+  send(msg: any):void {
+    this._master?.send(JSON.stringify(msg));
   }
 
   async connect() {
@@ -310,6 +315,8 @@ export class PlayerPeerConnection {
         case 'markers':
           this.onMarkers(data.data);
           break;
+        case 'pointer':
+          this.onPointer(data.data.x, data.data.y);
         default:
           console.log('unknown data', data);
       }
@@ -358,6 +365,7 @@ class ToPlayerConnection {
   private _signaler: IDSignaler;
   private _conn: PeerConnection
 
+  onMessage = (msg: string) => {};
   onPeerConnectionChange = (connected: boolean) => {};
 
   constructor(s: IDSignaler, cfg: RTCConfiguration) {
@@ -365,6 +373,7 @@ class ToPlayerConnection {
     this._conn = new PeerConnection();
     this._conn.connect(cfg, s, /* unpolite */false);
 
+    this._conn.onMessage = (msg: any) => this.onMessage(msg);
     this._conn.onConnectionChange = (connected: boolean) => {
       this.onPeerConnectionChange(connected);
     };
@@ -394,6 +403,8 @@ export class MasterPeerConnection {
 
   // Callback to signal the number of players connected.
   onPlayersChange = (players: number) => {};
+
+  onPlayerMessage = (playerID: string, message: any) => {};
 
   constructor(roomID: string) {
     let auth = ''
@@ -434,6 +445,10 @@ export class MasterPeerConnection {
             this._players.set(id, c);
             // TODO there must be a race condition here because at this time the connection
             // is not ready to send yet.
+            c.onMessage = (msg: string) => {
+              const o = JSON.parse(msg);
+              this.onPlayerMessage(id, o);
+            };
             setTimeout( () => {
               if ( this._lastMap != null )
                 c.send(this._lastMap);
@@ -481,6 +496,17 @@ export class MasterPeerConnection {
   async sendMarkers(markers: PositionedMarker[]) {
     const jData = JSON.stringify({ content: 'markers', data: markers });
     this._lastMarkers = jData;
+    this._players.forEach((conn, id) => {
+      try {
+        conn.send(jData);
+      } catch (e) {
+        console.log('error sending map to peer', e);
+      }
+    });
+  }
+
+  sendMessage(msg: any) {
+    const jData = JSON.stringify(msg);
     this._players.forEach((conn, id) => {
       try {
         conn.send(jData);

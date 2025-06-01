@@ -143,6 +143,62 @@ export class MarkerPlacer {
         this._markers = new Map();
     }
 
+    point(x: number, y: number) {
+        const s = 40;
+        x = x - s/2;
+        y = y - s/2;
+
+        const p = document.createElement('div');
+        this._container.appendChild(p);
+        p.style.border = '5px solid red';
+        p.style.boxSizing = 'border-box';
+        p.style.width = `${s}px`;
+        p.style.height = `${s}px`;
+        p.style.borderRadius = `${s}px`;
+        p.style.position = 'absolute';
+        p.style.top = `${y}px`;
+        p.style.left = `${x}px`;
+
+        const pulse = new KeyframeEffect(p, 
+            [ // keyframes
+                { 
+                    transform: "scale(450%)",
+                    opacity: '0',
+                },
+                { 
+                    transform: "scale(100%)",
+                    opacity: '1',
+                },
+                { 
+                    transform: "scale(150%)",
+                },
+                { 
+                    transform: "scale(90%)",
+                },
+                { 
+                    transform: "scale(110%)",
+                    opacity: '1',
+                },
+                { 
+                    transform: "scale(0%)",
+                    opacity: '0',
+                },
+            ],
+            {
+                // keyframe options
+                duration: 3000,
+                direction: "alternate",
+                easing: "ease-in-out",
+                iterations: 1,
+            },
+        );
+        const a = new Animation(pulse, document.timeline);
+        a.play();
+        a.onfinish = ()=>{
+            p.remove();
+        };
+    }
+
     // adds a new marker
     add(mi: MarkerIcon) {
         const old = this.getList();
@@ -472,6 +528,10 @@ export class Painter {
         this._markerPlacer.load(markers, draggable);
     }
     
+    point(x: number, y: number) {
+        this._markerPlacer.point(x, y);
+    }
+
     reset() {
         const w = 200;
         const h = 200;

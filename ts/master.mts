@@ -216,6 +216,15 @@ async function initMaster() {
             api.onPlayersChange = (numPlayers) => {
                 playersNum.value = `${numPlayers}`;
             };
+            api.onPlayerMessage = (playerID:string, msg:any) => {
+                switch( msg.type ){
+                    case 'pointer':
+                        painter.point(msg.x, msg.y);
+                        api?.sendMessage({content: 'pointer', data: {x: msg.x, y: msg.y}});
+                    default:
+                        console.log(`unknown message ${msg.type} from ${playerID}`);
+                }
+            }
             api.onConnectionChange = (room) => {
                 if ( room === false ) {
                     disconnectedChip.style.visibility = 'visible';
