@@ -143,6 +143,7 @@ export class MarkerPlacer {
         this._markers = new Map();
     }
 
+    // point creates a temporary pointer to highlight a place on the map.
     point(x: number, y: number) {
         const s = 40;
         x = x - s/2;
@@ -268,6 +269,7 @@ export class MarkerPlacer {
     
 }
 
+// CanvasCursor is a html canvas to render the size of a paintbrush.
 class CanvasCursor {
     readonly element: HTMLCanvasElement;
     size = 30;

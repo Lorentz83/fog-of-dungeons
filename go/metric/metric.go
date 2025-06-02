@@ -1,3 +1,7 @@
+// Package metric implements some simple data structure to keep track of usage metrics.
+//
+// Each metric is identified by a name. Names should be unique but this is not enforced.
+// Use Summary() to print all the metrics.
 package metric
 
 import (

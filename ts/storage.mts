@@ -1,7 +1,14 @@
+// Implements the map storage in the master's local browser storage.
+// Used by the master only.
+
 import { PositionedMarker, newID } from "./common.mjs"
 
+// LayerType represents the layers of the map.
+// Used to specify which layer to update without having to re-send the full StoredMap.
 export type LayerType = 'base' | 'fog' | 'markers';
 
+// StoredMapBuilder is just an interface so the caller can create a
+// StoredMap from an object without the map ID.
 interface StoredMapBuilder {
     title: string;
     base: Blob;
@@ -9,6 +16,7 @@ interface StoredMapBuilder {
     markers: PositionedMarker[];
 }
 
+// StoredMap represents a map stored in the local browser DB.
 export class StoredMap {
     id: string;
     title: string;
@@ -16,6 +24,9 @@ export class StoredMap {
     fog: Blob;
     markers: PositionedMarker[];
 
+    // A new ID is created for each new instance of StoredMap, 
+    // therefore the caller should use this constructor only for new maps.
+    // For existing maps the caller should use only the object returned from MapStorage.
     constructor(b: StoredMapBuilder) {
         this.id = newID();
         this.title = b.title;
@@ -25,6 +36,7 @@ export class StoredMap {
     }
 }
 
+// MapStorage implements specialized functions to save and load maps from the local DB.
 export class MapStorage {
     private _db: IDBDatabase;
     
@@ -123,6 +135,7 @@ export class MapStorage {
                 const map = request.result as StoredMap;
                 if ( map === null ) {
                     reject(`map ${mapID} not found`);
+                    return;
                 }
                 resolve(map);
             };
@@ -157,5 +170,4 @@ export class MapStorage {
             };
         });        
     }
-
 }

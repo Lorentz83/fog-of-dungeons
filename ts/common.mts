@@ -1,8 +1,10 @@
+// Contains the shared code between players and master.
 
 const idAlphabet = '23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
 const idAlphabetLen = idAlphabet.length;
 
 // KeepAwake is a convenience wrapper around the wake lock API.
+// It handles automatic reacquiring when the tab gets back in focus.
 export class KeepAwake {
     readonly isSupported: boolean;
     onChange = (enabled: boolean) => {};
@@ -153,6 +155,7 @@ export  class SnackBar {
     }
 }
 
+// newID returns a short human readable ID.
 export function newID():string {
     let ret = '';
     // Here we reverse the bytes of the date, so the last part of the string

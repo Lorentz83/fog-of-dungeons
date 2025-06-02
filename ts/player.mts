@@ -1,9 +1,14 @@
+// Contains the typescript for the players only.
+// This file is the glue between player.html and the rest of typescript.
+
 import { PlayerPeerConnection } from "./api.mjs"
 import { KeepAwake } from "./common.mjs"
 import { MarkerPlacer } from "./painter.mjs"
 
 const keepAwake = new KeepAwake();
 
+// ImageSwitcher allows to fade between 2 different images.
+// The new image is loaded every time the src attribute is set.
 class ImageSwitcher {
     private _container: HTMLDivElement;
     private _img1: HTMLImageElement;
@@ -117,6 +122,7 @@ function adjustZoom() {
     }
 }
 
+// getRoomID extracts the room ID from the current URL.
 function getRoomID(): string {
     const editPrefix = '#id=';
     const h = window.location.hash;
@@ -127,6 +133,8 @@ function getRoomID(): string {
     return id;
 }
 
+// playerInit is the entry point of the player's typescript.
+// It executes on pageload and binds all the basic event listeners.
 function playerInit() {
     try {
         const roomID = getRoomID();

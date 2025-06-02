@@ -1,3 +1,7 @@
+// Package game handles the server side message passing between clients playing the same game.
+//
+// NOTE: messages passed here are just to handle the webRTC negotiation. Actual game messages
+// are sent p2p between players and master.
 package game
 
 import (

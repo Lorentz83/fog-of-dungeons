@@ -1,3 +1,6 @@
+// Contains the typescript for the master only.
+// This file is the glue between master.html and the rest of typescript.
+ 
 import { MasterPeerConnection } from "./api.mjs"
 import { PositionedMarker, MarkerIcon, KeepAwake, SnackBar} from "./common.mjs"
 import { MapStorage, StoredMap } from "./storage.mjs"
@@ -34,7 +37,7 @@ async function populateMapList(storage: MapStorage, ul: HTMLElement, makeLink: (
 }
 
 // Handles the dialog to add a marker.
-// onSelect is called when a new marker is choosen.
+// onSelect is called when a new marker is chosen.
 class AddMarkerDialog {
     private _dialog: HTMLDialogElement;
     onSelect = (cfg: MarkerIcon) => {};
@@ -125,6 +128,8 @@ class NewMapDialog {
     }
 }
 
+// Pagination monitors for hash changes in the URL and calls the appropriate callback to signal
+// if the user moved to the landing page or to the map edit page.
 class Pagination {
     onLanding = () => {};
     onEdit = (mapId: string, roomId: string) => {};
@@ -171,6 +176,7 @@ class Pagination {
     }
 }
 
+// initMaster is the entrypoint called on page load.
 async function initMaster() {
     const storage = await MapStorage.init();
     const painter = new Painter(document.getElementById('map_container') as HTMLDivElement);

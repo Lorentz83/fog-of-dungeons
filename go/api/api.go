@@ -1,3 +1,7 @@
+// Package API implements the server side API.
+//
+// It defines the basic messages exchanged between master and players to negotiate a webRCT connection.
+// See the package protocol for details of each message.
 package api
 
 import (

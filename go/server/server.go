@@ -1,3 +1,4 @@
+// Package server implements some helpers to better handle the HTTP server.
 package server
 
 import (

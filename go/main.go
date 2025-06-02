@@ -42,10 +42,10 @@ func main() {
 	if err := json.Unmarshal([]byte(*webRTCConfig), &config); err != nil {
 		log.Fatalf("invalid --webrtc_config flag: %v", err)
 	}
-	log.Printf("using webRTC config; %v", config)
+	log.Printf("using webRTC config: %v", config)
 	api, err := api.NewSignaler("/api/", *expiration, config)
 	if err != nil {
-		log.Fatalf("cannot create APIv2: %v", err)
+		log.Fatalf("cannot create API: %v", err)
 	}
 
 	var staticHandler http.Handler
