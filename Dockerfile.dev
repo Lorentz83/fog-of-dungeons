@@ -29,20 +29,20 @@ COPY --chmod=755 <<"EOF" /home/srv/build.sh
 
 watchTS() {
     cd ~/src/ts/
-    tsc --watch 
+    tsc --watch
 }
 
 watchGO() {
     cd ~/src/go/
     air --build.cmd "GOPATH=/tmp go build -o /tmp/build" \
-        --build.bin "/tmp/build --dev --listen=:8080" \
+        --build.entrypoint "../../../../tmp/build, --dev, --listen=:8080" \
         --tmp_dir "../../temp" \
         --build.exclude_dir "ui"
 }
 
 watchTS &
 # We need to give time to TS to generate output, otherwise go embed complains.
-sleep 3s 
+sleep 3s
 watchGO
 
 EOF
