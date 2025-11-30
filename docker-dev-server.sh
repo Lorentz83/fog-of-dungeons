@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -xeao pipefail
+
 # Set up a docker container which watches for file changes and rebuild
 # the code (both typescript and go) whenever needed.
 
