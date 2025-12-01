@@ -6,7 +6,7 @@ class LiveMarker {
     private _container: HTMLDivElement;
     private _target: HTMLDivElement | null;
     private _config: PositionedMarker;
-    
+
     constructor(container: HTMLDivElement, config: PositionedMarker) {
         this._config = config;
 
@@ -14,14 +14,14 @@ class LiveMarker {
         this._target = document.createElement('div');
         this._target.classList.add('marker');
         this._container.appendChild(this._target);
-        
+
         this._target.style.position = 'absolute';
         this._target.style.width = this._config.width + 'px';
         this._target.style.height = this._config.height + 'px';
 
         this._target.style.backgroundImage = `url('${this._config.image}')`;
         this._target.style.backgroundPosition = `-${this._config.bgX}px -${this._config.bgY}px`;
-        
+
         this._move(this._config.x, this._config.y);
 
         this._target.classList.add('marker_in');
@@ -55,7 +55,7 @@ class LiveMarker {
         // Object.assign(this, config); Do we want to support morphing?
         this._move(cfg.x, cfg.y)
     }
-    
+
     private _outsideBoundaries(x:number, y:number) {
         const left = - this._config.width;
         const right = + getComputedStyle(this._container).getPropertyValue('width').slice(0,-2);
@@ -72,13 +72,13 @@ class LiveMarker {
         this._target.style.cursor = 'grab';
         this._target.style.pointerEvents = 'auto';
         this._target.style.touchAction = 'pinch-zoom';
-        
+
         let old: PositionedMarker
         let held = {x: 0, y: 0};
         this._target.addEventListener('pointerdown', (ev)=>{
             if (ev.buttons != 1)
                 return;
-            ev.preventDefault();            
+            ev.preventDefault();
             this._target!.setPointerCapture(ev.pointerId);
             held = relativeCoordinates(this._target!, ev.clientX, ev.clientY);
             old = this.toJSON();
@@ -117,7 +117,7 @@ class LiveMarker {
         }, 1000);
         this._target = null;
     }
-    
+
     isDeleted() {
         return this._target == null;
     }
@@ -131,7 +131,7 @@ export class MarkerPlacer {
     // onMarkerChange is the callback called every time the user interacts (moves or deletes) a marker.
     // The parameter is the list of actives markers.
     onMarkerChange = (prev: PositionedMarker[], curr: PositionedMarker[]) => {};
-    
+
     constructor(container: HTMLDivElement) {
         this._container = container;
         this._container.style.overflow = 'hidden';
@@ -160,27 +160,27 @@ export class MarkerPlacer {
         p.style.top = `${y}px`;
         p.style.left = `${x}px`;
 
-        const pulse = new KeyframeEffect(p, 
+        const pulse = new KeyframeEffect(p,
             [ // keyframes
-                { 
+                {
                     transform: "scale(450%)",
                     opacity: '0',
                 },
-                { 
+                {
                     transform: "scale(100%)",
                     opacity: '1',
                 },
-                { 
+                {
                     transform: "scale(150%)",
                 },
-                { 
+                {
                     transform: "scale(90%)",
                 },
-                { 
+                {
                     transform: "scale(110%)",
                     opacity: '1',
                 },
-                { 
+                {
                     transform: "scale(0%)",
                     opacity: '0',
                 },
@@ -266,7 +266,7 @@ export class MarkerPlacer {
             m.delete();
         }
     }
-    
+
 }
 
 // CanvasCursor is a html canvas to render the size of a paintbrush.
@@ -303,14 +303,14 @@ class CanvasCursor {
         const ctx = this.element.getContext('2d')!;
         ctx.clearRect(0, 0, this.element.width, this.element.height);
     }
-    
+
     move(x: number, y: number) {
         // Touchscreens cannot notify mouse leave event, so we hide the cursor after some inactivity.
         clearTimeout(this._clearCursorTimer);
         this._clearCursorTimer = setTimeout( () => {
             this.clear()
         }, 3000);
-        
+
         const ctx = this.element.getContext('2d')!;
         const size = this.size / this.blurMultiplier / 2; // need to compensate for the blur.
         ctx.clearRect(0, 0, this.element.width, this.element.height);
@@ -366,7 +366,7 @@ class CustomCanvas {
             this.element.toBlob( (blob) => resolve(blob!) , type, quality);
         });
     }
-    
+
     setImage(img: string | Blob, config: {resizeCanvas?: boolean, maxWidth?: number, maxHeight?: number, alpha?: boolean} = {}): Promise<void> {
         return new Promise((resolve, reject) => {
             const ri = document.createElement('img');
@@ -431,7 +431,7 @@ export class Painter {
     notifyDefogDelayMs = 500;
     maxUndo = 40;
     minSpanSaveUndoMS = 1000;
-    
+
     get cursorSize() {
         return this._cursor.size;
     }
@@ -447,7 +447,7 @@ export class Painter {
     get blurMultiplier() {
         return this._cursor.blurMultiplier;
     }
-    
+
     set fogOpacity(val: number) {
         this._canvasFog.element.style.opacity = ''+val;
     }
@@ -469,22 +469,22 @@ export class Painter {
         markerContainer.style.right = '0';
 
         this._markerPlacer = new MarkerPlacer(markerContainer);
-        
+
         mapContainer.style.position = 'relative';
         mapContainer.style.cursor = 'crosshair';
         mapContainer.style.width = 'fit-content';
         mapContainer.style.height = 'fit-content';
         // mapContainer.style.userSelect = 'none';
         mapContainer.style.touchAction = 'pinch-zoom';
-        
+
         mapContainer.appendChild(this._canvasBase.element);
         mapContainer.appendChild(this._canvasFog.element);
         mapContainer.appendChild(this._cursor.element);
-        
+
         mapContainer.appendChild(markerContainer);
 
         this.reset();
-        
+
         this._markerPlacer.onMarkerChange = (prev: PositionedMarker[], curr: PositionedMarker[]) => {
             this._saveUndo(prev);
             this.onMarkerChange(curr);
@@ -494,14 +494,14 @@ export class Painter {
         this._canvasFog.element.addEventListener('touchstart', (ev)=>{
             multiTouch = ev.touches.length > 1;
             if ( ! multiTouch ) {
-                this._saveFogUndo(); 
+                this._saveFogUndo();
             }
         });
         this._canvasFog.element.addEventListener('pointermove', (ev)=>{
             if ( multiTouch )
                 return;
             this._canvasFog.element.setPointerCapture(ev.pointerId);
-            
+
             const point = relativeCoordinates(ev.currentTarget as HTMLElement, ev.clientX, ev.clientY);
 
             this._cursor.move(point.x, point.y);
@@ -521,7 +521,7 @@ export class Painter {
         });
         this._canvasFog.element.addEventListener('mouseleave', (ev)=>  this._cursor.clear() );
     }
-    
+
     addMarker(cfg: MarkerIcon) {
         this._markerPlacer.add(cfg);
     }
@@ -529,7 +529,7 @@ export class Painter {
     loadMarkers(markers: PositionedMarker[], draggable: boolean) {
         this._markerPlacer.load(markers, draggable);
     }
-    
+
     point(x: number, y: number) {
         this._markerPlacer.point(x, y);
     }
@@ -545,11 +545,11 @@ export class Painter {
         this._canvasBase.fill('#ccc');
         this._markerPlacer.reset();
     }
-    
+
     setFog(img: string | Blob): Promise<void> {
         return this._canvasFog.setImage(img, {alpha: true});
     }
-    
+
     async setMap(img: string | Blob): Promise<void> {
         this._undoList = [];
         await this._canvasBase.setImage(img, {resizeCanvas: true, maxWidth: this.maxWidth, maxHeight: this.maxHeight});
@@ -585,7 +585,7 @@ export class Painter {
         }
         return true;
     }
-    
+
     private _saveFogUndo() {
         if ( this.maxUndo <= 0 ) {
             return;
@@ -595,7 +595,7 @@ export class Painter {
             return;
         }
         this._lastSavedFogUndo = n;
-        
+
         this._saveUndo(this._canvasFog.element.toDataURL());
     }
 
@@ -605,7 +605,7 @@ export class Painter {
             this._undoList.slice(- this.maxUndo);
         }
     }
-    
+
     private _notifyDefog() {
         if ( this.notifyDefogCallback === null ) {
             return;
@@ -627,12 +627,12 @@ export class Painter {
     saveFog() {
         return this._canvasFog.exportBlob('image/png'); // We need transparent here.
     }
-    
+
     saveMerged() {
         const m = document.createElement('canvas');
         m.width = this._canvasBase.element.width;
         m.height = this._canvasBase.element.height;
-        
+
         const ctx = m.getContext('2d')!;
 
         ctx.drawImage(this._canvasBase.element, 0, 0);
@@ -650,7 +650,7 @@ function relativeCoordinates(obj: HTMLElement, x: number, y: number) {
     const rect = obj.getBoundingClientRect();
 
     return {
-        x : x - rect.left - leftBorder, 
+        x : x - rect.left - leftBorder,
         y : y - rect.top - topBorder
     };
 }
